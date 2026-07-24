@@ -168,7 +168,7 @@ gemini_client = None
 if genai and GEMINI_API_KEY:
     gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 
-http = httpx.AsyncClient(timeout=60)
+http = httpx.AsyncClient(timeout=60, follow_redirects=True)
 
 # IP geolocation → response language mapping.
 _geo_cache: dict[str, str] = {}
@@ -596,6 +596,7 @@ async def watermark_proxy(url: Optional[str] = None, path: Optional[str] = None)
         allowed_prefixes = (
             IMAGE_API_BASE,
             "https://onlypepes.com",
+            "https://archive.org",
             "https://i.imgur.com",
             "https://imgur.com",
             "https://i.redd.it",
