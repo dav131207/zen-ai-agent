@@ -77,18 +77,11 @@ export default function Chat({ isDark }) {
       const wantsImage = /\b(show|image|picture|pic|photo|visual|draw|meme)\b/i.test(text)
       const isSocialCommand = text.toLowerCase().startsWith('create a social media post')
 
+      // Only fetch images when the user explicitly asks for one.
+      // The "create a social media post" command is text-only by default.
       let imageUrl = null
-      if (wantsImage || isSocialCommand) {
-        if (isSocialCommand && Math.random() < 0.5) {
-          try {
-            const pepe = await fetchRarePepe()
-            imageUrl = pepe.url
-          } catch {
-            imageUrl = await fetchImage(text)
-          }
-        } else {
-          imageUrl = await fetchImage(text)
-        }
+      if (wantsImage && !isSocialCommand) {
+        imageUrl = await fetchImage(text)
       }
 
       const history = messages

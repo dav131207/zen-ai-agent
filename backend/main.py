@@ -307,6 +307,11 @@ if MEMES_DIR and MEMES_DIR.is_dir():
     app.mount("/memes", StaticFiles(directory=str(MEMES_DIR)), name="memes")
 
 
+def _is_social_command(message: str) -> bool:
+    """Detect the built-in 'create a social media post' command."""
+    return (message or "").strip().lower().startswith("create a social media post")
+
+
 def _build_contents(topic: str, message: str, history: list[dict], context: str = ""):
     system = _system_prompt
     if context:
@@ -319,6 +324,14 @@ def _build_contents(topic: str, message: str, history: list[dict], context: str 
         system += (
             f"\n\nThe user is asking about the topic: {topic}. "
             "Stay focused on this topic when relevant."
+        )
+
+    # Social-media posts are text-only by default and must fit a single tweet.
+    if _is_social_command(message):
+        system += (
+            "\n\nYou are generating a social media post. "
+            "Keep the final text under 280 characters. "
+            "Do not include images unless the user explicitly asks for one."
         )
 
     contents = [types.Content(role="user", parts=[types.Part(text=system)])]
@@ -371,6 +384,7 @@ async def chat(req: ChatRequest):
             context = "\n\n---\n\n".join(chunks)
 
     contents = _build_contents(req.topic, req.message, req.history, context)
+    max_chars = 280 if _is_social_command(req.message) else None
 
     if req.stream:
         response = client.models.generate_content_stream(
@@ -379,10 +393,19 @@ async def chat(req: ChatRequest):
         )
 
         async def streamer():
+            chars_yielded = 0
             for chunk in response:
                 text = chunk.text or ""
-                if text:
-                    yield text
+                if not text:
+                    continue
+                if max_chars is not None:
+                    remaining = max_chars - chars_yielded
+                    if remaining <= 0:
+                        break
+                    if len(text) > remaining:
+                        text = text[:remaining]
+                    chars_yielded += len(text)
+                yield text
 
         return StreamingResponse(streamer(), media_type="text/plain")
 
@@ -390,7 +413,10 @@ async def chat(req: ChatRequest):
         model=DEFAULT_MODEL,
         contents=contents,
     )
-    return {"text": response.text or ""}
+    text = response.text or ""
+    if max_chars is not None:
+        text = text[:max_chars]
+    return {"text": text}
 
 
 @router.post("/image")
