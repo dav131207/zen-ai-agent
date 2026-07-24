@@ -4,7 +4,7 @@ services:
     runtime: docker
     repo: https://github.com/dav131207/zen-ai-agent
     plan: free
-    region: frankfurt
+    region: oregon
     healthCheckPath: /api/health
     envVars:
       - key: GEMINI_API_KEY
