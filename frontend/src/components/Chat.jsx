@@ -280,14 +280,14 @@ export default function Chat({ isDark }) {
       {/* input area */}
       <div className={`relative z-20 px-3 sm:px-4 md:px-8 py-3 sm:py-4 bg-brand-800/70 dark:bg-brand-950/60 backdrop-blur-xl border-t border-brand-700/30 dark:border-white/5`}>
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative">
-          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+          <div className="flex flex-nowrap sm:flex-wrap items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 overflow-x-auto sm:overflow-visible pb-1 scrollbar-thin snap-x snap-mandatory">
             {COMMANDS.map((cmd) => (
               <button
                 key={cmd.id}
                 type="button"
                 onClick={() => handleSubmit(null, { display: cmd.label, send: cmd.prompt })}
                 disabled={loading}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium transition-all duration-200 hover:scale-105 hover:shadow-md ${
+                className={`shrink-0 snap-start whitespace-nowrap px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium transition-all duration-200 hover:scale-105 hover:shadow-md ${
                   isDark
                     ? 'bg-brand-800 text-brand-300 hover:bg-brand-700 hover:text-brand-50'
                     : 'bg-brand-100 text-brand-600 hover:bg-brand-200 hover:text-brand-900'
