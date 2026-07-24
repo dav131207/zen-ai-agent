@@ -1,8 +1,8 @@
 """
 Qdrant-based RAG storage for Professor Pepe.
 
-Embeddings are generated via the Gemini API (models/gemini-embedding-001),
-so the backend stays lightweight and works without torch/onnx.
+Embeddings are generated via the Gemini API (models/gemini-embedding-001
+or models/text-embedding-004 with output_dimensionality=3072).
 Supports both Qdrant Cloud and local Qdrant instances.
 """
 
@@ -23,8 +23,10 @@ from qdrant_client.http.models import (
 
 try:
     from google import genai
+    from google.genai import types
 except ImportError:  # pragma: no cover
     genai = None
+    types = None
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001")
@@ -54,9 +56,13 @@ def _embed(texts: List[str]) -> Optional[List[List[float]]]:
         return None
 
     try:
+        config = None
+        if types and "embedding-004" in EMBEDDING_MODEL:
+            config = types.EmbedContentConfig(output_dimensionality=VECTOR_SIZE)
         response = client.models.embed_content(
             model=EMBEDDING_MODEL,
             contents=texts,
+            config=config,
         )
         return [embedding.values for embedding in response.embeddings]
     except Exception:
