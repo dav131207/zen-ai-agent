@@ -56,18 +56,14 @@ export default function Message({ msg, isDark }) {
       <div className={`max-w-[88%] sm:max-w-[85%] md:max-w-[80%] min-w-0 ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1.5 sm:gap-2`}>
         <div className={`message-bubble-${isUser ? 'user' : 'agent'} px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3.5 w-full`}>
           {msg.image && (
-            <motion.div
+            <motion.img
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4 }}
-              className="relative w-full h-48 sm:h-56 md:h-64 mb-2 sm:mb-3 rounded-xl overflow-hidden shadow-sm"
-            >
-              <img
-                src={msg.image}
-                alt="Generated visual"
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-            </motion.div>
+              src={msg.image}
+              alt="Generated visual"
+              className="mb-2 sm:mb-3 rounded-xl max-w-full max-h-48 sm:max-h-56 md:max-h-64 h-auto w-auto mx-auto shadow-sm"
+            />
           )}
           {msg.text && (
             <div className="prose prose-sm dark:prose-invert max-w-none break-words">
