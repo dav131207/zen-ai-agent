@@ -3,30 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Loader2 } from 'lucide-react'
 import Message from './Message'
 import ImageModal from './ImageModal'
+import { DEFAULT_LABELS, getLabels } from '../lib/commandLabels'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
-
-const DEFAULT_LABELS = {
-  getcoins: 'Get Free Coins!',
-  meme: 'Random Pepe',
-  rarepepe: 'Rare Pepe',
-  social: 'Create Social Media Post',
-  socialShort: 'Social Post',
-  welcome: "Hello. I'm Professor Pepe, your AI agent. Type a command or choose one below.",
-  placeholder: 'Type a command...',
-}
-
-const LABELS = {
-  German: {
-    getcoins: 'Gratis Coins!',
-    meme: 'Zufälliger Pepe',
-    rarepepe: 'Rare Pepe',
-    social: 'Social Media Post erstellen',
-    socialShort: 'Post erstellen',
-    welcome: 'Hallo. Ich bin Professor Pepe, dein KI-Assistent. Tippe einen Befehl oder wähle unten einen aus.',
-    placeholder: 'Befehl eingeben...',
-  },
-}
 
 const COMMANDS = [
   { id: 'getcoins', prompt: 'get coins' },
@@ -34,10 +13,6 @@ const COMMANDS = [
   { id: 'rarepepe', prompt: 'rare pepe' },
   { id: 'social', prompt: 'create social media post' },
 ]
-
-function getLabels(language) {
-  return LABELS[language] || DEFAULT_LABELS
-}
 
 export default function Chat({ isDark }) {
   const [language, setLanguage] = useState('English')

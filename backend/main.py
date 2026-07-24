@@ -200,7 +200,11 @@ COUNTRY_TO_LANGUAGE = {
     "CN": "Chinese",
     "TW": "Chinese",
     "HK": "Chinese",
-    "IN": "English",
+    "IN": "Hindi",
+    "BD": "Bengali",
+    "PK": "Urdu",
+    "LK": "Tamil",
+    "NP": "English",
     "SE": "Swedish",
     "NO": "Norwegian",
     "DK": "Danish",
@@ -209,6 +213,7 @@ COUNTRY_TO_LANGUAGE = {
     "HU": "Hungarian",
     "RO": "Romanian",
     "GR": "Greek",
+    "IT": "Italian",
     "IL": "Hebrew",
     "SA": "Arabic",
     "AE": "Arabic",
@@ -585,7 +590,11 @@ GET_COINS_TEXTS = {
 async def get_coins(request: Request):
     """Return a concise guide with faucet, wallet, Discord and tipping channel links."""
     language = await detect_language_from_request(request)
-    text = GET_COINS_TEXTS.get(language, GET_COINS_TEXTS["English"])
+    text = GET_COINS_TEXTS.get(language)
+    if text is None:
+        text = GET_COINS_TEXTS["English"]
+        if language and language.lower() not in ("english", "en"):
+            text = await _translate_text(text, language) or text
     return {"text": text}
 
 
