@@ -8,14 +8,17 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: GEMINI_API_KEY
+        value: REPLACE_ME
       - key: GEMINI_MODEL
-        value: gemini-3.6-flash
+        value: gemini-2.5-flash
       - key: GEMINI_EMBEDDING_MODEL
-        value: models/gemini-embedding-001
+        value: models/gemini-embedding
       - key: IMAGE_API_BASE
         value: https://onlypepes.com
       - key: QDRANT_URL
+        value: REPLACE_ME
       - key: QDRANT_API_KEY
+        value: REPLACE_ME
       - key: QDRANT_COLLECTION
         value: professor_pepe
       - key: WATERMARK_PATH
