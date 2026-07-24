@@ -24,8 +24,10 @@ export default function ParticlesBackground({ isDark }) {
 
     const createParticles = () => {
       const area = window.innerWidth * window.innerHeight
-      const density = 0.00016
-      const count = Math.max(50, Math.min(180, Math.floor(area * density)))
+      const isMobile = window.innerWidth < 768
+      const density = isMobile ? 0.0001 : 0.00016
+      const maxCount = isMobile ? 70 : 180
+      const count = Math.max(40, Math.min(maxCount, Math.floor(area * density)))
       particlesRef.current = Array.from({ length: count }, () => ({
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
@@ -48,6 +50,27 @@ export default function ParticlesBackground({ isDark }) {
       setTimeout(() => {
         mouseRef.current = { ...mouseRef.current, click: false }
       }, 150)
+    }
+
+    const handleTouchMove = (e) => {
+      const touch = e.touches[0]
+      if (touch) {
+        mouseRef.current = { ...mouseRef.current, x: touch.clientX, y: touch.clientY }
+      }
+    }
+
+    const handleTouchEnd = () => {
+      mouseRef.current = { ...mouseRef.current, x: null, y: null }
+    }
+
+    const handleTouchStart = (e) => {
+      const touch = e.touches[0]
+      if (touch) {
+        mouseRef.current = { ...mouseRef.current, x: touch.clientX, y: touch.clientY, click: true }
+        setTimeout(() => {
+          mouseRef.current = { ...mouseRef.current, click: false }
+        }, 150)
+      }
     }
 
     const draw = () => {
@@ -166,6 +189,9 @@ export default function ParticlesBackground({ isDark }) {
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('mouseleave', handleMouseLeave)
     window.addEventListener('click', handleClick)
+    window.addEventListener('touchmove', handleTouchMove, { passive: true })
+    window.addEventListener('touchend', handleTouchEnd)
+    window.addEventListener('touchstart', handleTouchStart, { passive: true })
     rafRef.current = requestAnimationFrame(draw)
 
     return () => {
@@ -174,6 +200,9 @@ export default function ParticlesBackground({ isDark }) {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseleave', handleMouseLeave)
       window.removeEventListener('click', handleClick)
+      window.removeEventListener('touchmove', handleTouchMove)
+      window.removeEventListener('touchend', handleTouchEnd)
+      window.removeEventListener('touchstart', handleTouchStart)
     }
   }, [isDark])
 
