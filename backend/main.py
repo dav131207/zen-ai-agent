@@ -550,6 +550,10 @@ async def fetch_rare_pepe(req: RarePepeRequest, request: Request):
         raise HTTPException(status_code=404, detail="No rare pepe found")
 
     filename = pepe.get("filename", "")
+    file_path = pepe.get("file_path", "")
+    if not filename and file_path:
+        filename = Path(file_path).name
+
     external_url = _extract_pepe_image_url(pepe)
     url = None
 

@@ -23,5 +23,7 @@ services:
         value: professor_pepe
       - key: WATERMARK_PATH
         value: /app/backend/assets/watermark.png
+      - key: MEMES_DIR
+        value: /app/backend/memes
       - key: PYTHONUNBUFFERED
         value: "1"
