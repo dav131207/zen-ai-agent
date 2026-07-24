@@ -10,6 +10,7 @@ const COMMANDS = [
   { id: 'meme', label: 'Random Meme', shortLabel: 'Meme', prompt: 'random meme' },
   { id: 'rarepepe', label: 'Rare Pepe', shortLabel: 'Rare Pepe', prompt: 'rare pepe' },
   { id: 'social', label: 'Create Social Media Post', shortLabel: 'Social Post', prompt: 'create social media post' },
+  { id: 'getcoins', label: 'Get Coins', shortLabel: 'Get Coins', prompt: 'get coins' },
 ]
 
 export default function Chat({ isDark }) {
@@ -60,6 +61,32 @@ export default function Chat({ isDark }) {
           {
             role: 'assistant',
             text: `⚠️ ${err.message || 'No rare pepe found.'}`,
+            time: formatTime(new Date()),
+          },
+        ])
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    if (sendText.toLowerCase() === 'get coins') {
+      try {
+        const data = await fetchGetCoins()
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            text: data.text,
+            time: formatTime(new Date()),
+          },
+        ])
+      } catch (err) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            text: `⚠️ ${err.message || 'Could not load get coins info.'}`,
             time: formatTime(new Date()),
           },
         ])
@@ -184,6 +211,15 @@ export default function Chat({ isDark }) {
       body: JSON.stringify({ query: 'rare pepe', history }),
     })
     if (!res.ok) throw new Error('No rare pepe found')
+    return res.json()
+  }
+
+  const fetchGetCoins = async () => {
+    const res = await fetch(`${API_BASE}/api/get_coins`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!res.ok) throw new Error('Could not load get coins info')
     return res.json()
   }
 

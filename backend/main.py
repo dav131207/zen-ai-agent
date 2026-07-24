@@ -512,6 +512,25 @@ async def fetch_image(req: ImageRequest, request: Request):
         raise HTTPException(status_code=502, detail=f"Image API error: {e}")
 
 
+@router.post("/get_coins")
+async def get_coins(request: Request):
+    """Return a concise guide with faucet, wallet, Discord and tipping channel links."""
+    text = (
+        "Want free PEP, fren? Here's how to get started:\n\n"
+        "1. **Claim free PEP from our faucet** – a risk-free way to test native transactions:\n"
+        "   https://pepeblocks.com/faucet\n\n"
+        "2. **Download a wallet** – Coinomi supports native Pepecoin. "
+        "Remember: PEP addresses always start with P, never 0x.\n"
+        "   https://www.coinomi.com/de/\n\n"
+        "3. **Join our Discord** for community, support and airdrops:\n"
+        "   discord.gg/UnyMVjM9rv\n\n"
+        "4. **Check the tipping channel** for ongoing airdrops:\n"
+        "   https://discord.com/channels/1162499246503759962/1203748781590577222\n\n"
+        "One coin. One community."
+    )
+    return {"text": text}
+
+
 @router.post("/emote")
 async def fetch_emote(req: EmoteRequest):
     """Pick a context-aware local emote based on the provided text."""
