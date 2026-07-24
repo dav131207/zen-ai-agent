@@ -274,6 +274,14 @@ class RarePepeRequest(BaseModel):
         default="rare pepe",
         description="Search term for the rare pepe collection",
     )
+    language: Optional[str] = Field(
+        default=None,
+        description="Target language for the description/explanation",
+    )
+    history: list[dict] = Field(
+        default_factory=list,
+        description="Previous conversation turns to infer user language",
+    )
 
 
 @asynccontextmanager
@@ -431,6 +439,89 @@ async def fetch_emote(req: EmoteRequest):
     return {"url": url}
 
 
+async def _detect_language_from_text(text: str) -> Optional[str]:
+    """Ask Gemini to identify the language of the provided text."""
+    client = gemini_client
+    if not client:
+        return None
+    try:
+        response = client.models.generate_content(
+            model=DEFAULT_MODEL,
+            contents=[
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part(
+                            text=(
+                                'Identify the language of the following text. '
+                                'Reply with only the English name of the language, e.g. "German", "English", "French".\n\n'
+                                f'Text: "{text}"'
+                            )
+                        )
+                    ],
+                )
+            ],
+        )
+        return (response.text or "").strip().strip('"').strip("'")
+    except Exception:
+        return None
+
+
+async def _translate_text(text: Optional[str], language: str) -> Optional[str]:
+    """Translate text to the requested language using Gemini."""
+    if not text:
+        return text
+    target = language.lower()
+    if target in ("english", "en"):
+        return text
+
+    client = gemini_client
+    if not client:
+        return text
+    try:
+        response = client.models.generate_content(
+            model=DEFAULT_MODEL,
+            contents=[
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part(
+                            text=(
+                                f'Translate the following text to {language}. '
+                                'Preserve the meaning and tone. Reply with only the translation, no explanations.\n\n'
+                                f'{text}'
+                            )
+                        )
+                    ],
+                )
+            ],
+        )
+        translated = (response.text or "").strip()
+        return translated or text
+    except Exception:
+        return text
+
+
+async def _resolve_target_language(
+    language: Optional[str], history: list[dict], client_host: str
+) -> str:
+    """Pick the target language: explicit > last user message > geolocation > English."""
+    if language:
+        return language
+
+    for turn in reversed(history):
+        if turn.get("role") == "user":
+            text = turn.get("text", "")
+            if text:
+                detected = await _detect_language_from_text(text)
+                if detected:
+                    return detected
+                break
+
+    geo_language = await detect_language(client_host)
+    return geo_language or "English"
+
+
 @router.post("/rare_pepe")
 async def fetch_rare_pepe(req: RarePepeRequest, request: Request):
     """Return a non-politically-sensitive rare pepe from the Qdrant collection."""
@@ -455,11 +546,23 @@ async def fetch_rare_pepe(req: RarePepeRequest, request: Request):
     elif filename and MEMES_DIR and MEMES_DIR.is_dir():
         url = f"{request.base_url}api/watermark?path=/memes/{quote(filename, safe='')}"
 
+    target_language = await _resolve_target_language(
+        req.language, req.history, request.client.host
+    )
+
+    description = pepe.get("description", "")
+    explanation = pepe.get("explanation", "")
+
+    if target_language and target_language.lower() not in ("english", "en"):
+        description = await _translate_text(description, target_language)
+        explanation = await _translate_text(explanation, target_language)
+
     return {
         "url": url,
         "filename": filename,
-        "description": pepe.get("description", ""),
-        "explanation": pepe.get("explanation", ""),
+        "description": description,
+        "explanation": explanation,
+        "language": target_language,
     }
 
 

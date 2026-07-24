@@ -185,10 +185,15 @@ export default function Chat({ isDark }) {
   }
 
   const fetchRarePepe = async () => {
+    const history = messages
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .slice(-10)
+      .map((m) => ({ role: m.role, text: m.text }))
+
     const res = await fetch(`${API_BASE}/api/rare_pepe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: 'rare pepe' }),
+      body: JSON.stringify({ query: 'rare pepe', history }),
     })
     if (!res.ok) throw new Error('No rare pepe found')
     return res.json()
