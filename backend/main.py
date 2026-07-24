@@ -308,8 +308,10 @@ if MEMES_DIR and MEMES_DIR.is_dir():
 
 
 def _is_social_command(message: str) -> bool:
-    """Detect the built-in 'create a social media post' command."""
-    return (message or "").strip().lower().startswith("create a social media post")
+    """Detect the built-in 'create (a) social media post' command."""
+    return bool(
+        re.match(r"^create\s+a?\s*social\s+media\s+post", (message or "").strip(), re.IGNORECASE)
+    )
 
 
 def _build_contents(topic: str, message: str, history: list[dict], context: str = ""):
@@ -419,18 +421,47 @@ async def chat(req: ChatRequest):
     return {"text": text}
 
 
+def _extract_image_search_term(topic: str) -> str:
+    """Strip command prefixes and polite wrappers so only keywords remain."""
+    topic = (topic or "").strip()
+
+    # Remove the social-post command prefix if present.
+    topic = re.sub(
+        r"^create\s+(a\s+)?social\s+media\s+post(\s+about\s+)?",
+        "",
+        topic,
+        flags=re.IGNORECASE,
+    ).strip()
+
+    # Remove common "show me an image of..." wrappers.
+    wrappers = [
+        r"show\s+me\s+(a\s+|an\s+)?",
+        r"send\s+me\s+(a\s+|an\s+)?",
+        r"give\s+me\s+(a\s+|an\s+)?",
+        r"image\s+of\s+(a\s+|an\s+)?",
+        r"picture\s+of\s+(a\s+|an\s+)?",
+        r"pic\s+of\s+(a\s+|an\s+)?",
+        r"photo\s+of\s+(a\s+|an\s+)?",
+        r"visual\s+of\s+(a\s+|an\s+)?",
+        r"draw\s+(a\s+|an\s+)?",
+    ]
+    for pattern in wrappers:
+        topic = re.sub(rf"^{pattern}", "", topic, flags=re.IGNORECASE).strip()
+
+    return topic
+
+
 @router.post("/image")
 async def fetch_image(req: ImageRequest, request: Request):
-    """Fetch an image from the configured image API."""
-    params: dict = {"limit": 1}
-    topic = (req.topic or "").strip()
+    """Fetch an image from the OnlyPepes API using keywords/tags."""
+    topic = _extract_image_search_term(req.topic)
     # Treat explicit "random meme" commands as pure random, ignoring the search term.
     is_pure_random = not topic or topic.lower() in {"random meme", "random pepe", "random"}
-    if topic and not is_pure_random:
+
+    params: dict = {"limit": 1}
+    if not is_pure_random:
         params["search"] = topic
-        params["random"] = "true"
-    else:
-        params["random"] = "true"
+    params["random"] = "true"
 
     try:
         r = await http.get(f"{IMAGE_API_BASE}/api/pepe", params=params)

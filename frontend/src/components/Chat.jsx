@@ -9,7 +9,7 @@ const API_BASE = import.meta.env.VITE_API_URL || ''
 const COMMANDS = [
   { id: 'meme', label: 'Random Meme', shortLabel: 'Meme', prompt: 'random meme' },
   { id: 'rarepepe', label: 'Rare Pepe', shortLabel: 'Rare Pepe', prompt: 'rare pepe' },
-  { id: 'social', label: 'Create Social Media Post', shortLabel: 'Social Post', prompt: 'create a social media post about ' },
+  { id: 'social', label: 'Create Social Media Post', shortLabel: 'Social Post', prompt: 'create social media post' },
 ]
 
 export default function Chat({ isDark }) {
@@ -30,31 +30,27 @@ export default function Chat({ isDark }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, typingText])
 
-  const handleSubmit = async (e, commandText = null) => {
+  const handleSubmit = async (e, command = null) => {
     if (e && e.preventDefault) e.preventDefault()
-    const text = (commandText || input).trim()
-    if (!text || loading) return
+    const displayText = command ? command.display : input.trim()
+    const sendText = command ? command.send : input.trim()
+    if (!displayText || !sendText || loading) return
 
-    const userMsg = { role: 'user', text, time: formatTime(new Date()) }
+    const userMsg = { role: 'user', text: displayText, time: formatTime(new Date()) }
     setMessages((prev) => [...prev, userMsg])
-    if (!commandText) setInput('')
+    if (!command) setInput('')
     setLoading(true)
     setTypingText('')
 
-    if (text.toLowerCase() === 'rare pepe') {
+    if (sendText.toLowerCase() === 'rare pepe') {
       try {
         const pepe = await fetchRarePepe()
-        let emoteUrl = null
-        if (pepe.url && Math.random() < 0.35) {
-          emoteUrl = await fetchEmote(pepe.description || 'pepe')
-        }
         setMessages((prev) => [
           ...prev,
           {
             role: 'assistant',
-            text: pepe.explanation || pepe.description || 'Rare Pepe',
+            text: '',
             image: pepe.url,
-            emote: emoteUrl,
             time: formatTime(new Date()),
           },
         ])
@@ -74,14 +70,13 @@ export default function Chat({ isDark }) {
     }
 
     try {
-      const wantsImage = /\b(show|image|picture|pic|photo|visual|draw|meme)\b/i.test(text)
-      const isSocialCommand = text.toLowerCase().startsWith('create a social media post')
+      const wantsImage = /\b(show|image|picture|pic|photo|visual|draw|meme)\b/i.test(sendText)
+      const isSocialCommand = /^create\s+a?\s*social\s+media\s+post/i.test(sendText)
 
-      // Only fetch images when the user explicitly asks for one.
-      // The "create a social media post" command is text-only by default.
+      // Social posts always include an image; explicit image searches use onlypepes.com.
       let imageUrl = null
-      if (wantsImage && !isSocialCommand) {
-        imageUrl = await fetchImage(text)
+      if (wantsImage || isSocialCommand) {
+        imageUrl = await fetchImage(sendText)
       }
 
       const history = messages
@@ -94,7 +89,7 @@ export default function Chat({ isDark }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic: '',
-          message: text,
+          message: sendText,
           history,
           stream: true,
         }),
@@ -254,7 +249,7 @@ export default function Chat({ isDark }) {
               <button
                 key={cmd.id}
                 type="button"
-                onClick={() => handleSubmit(null, cmd.prompt)}
+                onClick={() => handleSubmit(null, { display: cmd.label, send: cmd.prompt })}
                 disabled={loading}
                 className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium transition-all duration-200 hover:scale-105 hover:shadow-md ${
                   isDark
