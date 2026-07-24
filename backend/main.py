@@ -395,10 +395,13 @@ async def chat(req: ChatRequest):
 
 @router.post("/image")
 async def fetch_image(req: ImageRequest, request: Request):
-    """Fetch a relevant image from the configured image API."""
+    """Fetch an image from the configured image API."""
     params: dict = {"limit": 1}
-    if req.topic:
-        params["search"] = req.topic
+    topic = (req.topic or "").strip()
+    # Treat explicit "random meme" commands as pure random, ignoring the search term.
+    is_pure_random = not topic or topic.lower() in {"random meme", "random pepe", "random"}
+    if topic and not is_pure_random:
+        params["search"] = topic
         params["random"] = "true"
     else:
         params["random"] = "true"
