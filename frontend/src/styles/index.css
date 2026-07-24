@@ -65,9 +65,14 @@
     padding-left: 1rem;
   }
 
+  .message-bubble-user .prose,
+  .message-bubble-agent .prose,
+  .message-bubble-user .prose p,
+  .message-bubble-agent .prose p,
   .message-bubble-user .prose li,
   .message-bubble-agent .prose li {
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+    word-break: normal;
   }
 }
 

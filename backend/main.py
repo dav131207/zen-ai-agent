@@ -249,6 +249,25 @@ async def detect_language(client_host: str) -> str:
     return "English"
 
 
+def _get_client_host(request: Request) -> str:
+    """Extract the real client IP from proxy headers when available."""
+    cf_ip = request.headers.get("CF-Connecting-IP")
+    if cf_ip:
+        return cf_ip.strip()
+    xff = request.headers.get("X-Forwarded-For")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else ""
+
+
+async def detect_language_from_request(request: Request) -> str:
+    """Detect language from Cloudflare country header or the client's IP."""
+    cf_country = request.headers.get("CF-IPCountry")
+    if cf_country:
+        return COUNTRY_TO_LANGUAGE.get(cf_country.upper().strip(), "English")
+    return await detect_language(_get_client_host(request))
+
+
 class ChatRequest(BaseModel):
     topic: str = Field(default="", description="Topic context for the conversation")
     message: str = Field(..., min_length=1, description="User message")
@@ -314,7 +333,13 @@ def _is_social_command(message: str) -> bool:
     )
 
 
-def _build_contents(topic: str, message: str, history: list[dict], context: str = ""):
+def _build_contents(
+    topic: str,
+    message: str,
+    history: list[dict],
+    context: str = "",
+    language: Optional[str] = None,
+):
     system = _system_prompt
     if context:
         system += (
@@ -326,6 +351,12 @@ def _build_contents(topic: str, message: str, history: list[dict], context: str 
         system += (
             f"\n\nThe user is asking about the topic: {topic}. "
             "Stay focused on this topic when relevant."
+        )
+
+    if language:
+        system += (
+            f"\n\nIMPORTANT: The user is located in a {language}-speaking region. "
+            f"Respond entirely in {language}, including all links and commands."
         )
 
     # Social-media posts are text-only by default and must fit a single tweet.
@@ -398,8 +429,15 @@ async def health():
     }
 
 
+@router.get("/language")
+async def language(request: Request):
+    """Return the detected language for the current client."""
+    lang = await detect_language_from_request(request)
+    return {"language": lang}
+
+
 @router.post("/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, request: Request):
     client = _gemini_client()
 
     context = ""
@@ -408,7 +446,10 @@ async def chat(req: ChatRequest):
         if chunks:
             context = "\n\n---\n\n".join(chunks)
 
-    contents = _build_contents(req.topic, req.message, req.history, context)
+    target_language = await _resolve_target_language(None, req.history, request)
+    contents = _build_contents(
+        req.topic, req.message, req.history, context, language=target_language
+    )
     is_social = _is_social_command(req.message)
 
     if req.stream:
@@ -512,21 +553,39 @@ async def fetch_image(req: ImageRequest, request: Request):
         raise HTTPException(status_code=502, detail=f"Image API error: {e}")
 
 
-@router.post("/get_coins")
-async def get_coins(request: Request):
-    """Return a concise guide with faucet, wallet, Discord and tipping channel links."""
-    text = (
+GET_COINS_TEXTS = {
+    "English": (
         "Want free PEP, fren? Here's how to get started:\n\n"
         "- **Faucet** – claim free PEP risk-free: "
         "[pepeblocks.com/faucet](https://pepeblocks.com/faucet)\n"
         "- **Wallet** – Coinomi supports native PEP (addresses start with P, never 0x): "
-        "[coinomi.com/de](https://www.coinomi.com/de/)\n"
+        "[coinomi.com](https://www.coinomi.com/)\n"
         "- **Discord** – community, support and airdrops: "
         "[Join Discord](discord.gg/UnyMVjM9rv)\n"
         "- **Tipping channel** – ongoing airdrops: "
         "[Open channel](https://discord.com/channels/1162499246503759962/1203748781590577222)\n\n"
         "One coin. One community."
-    )
+    ),
+    "German": (
+        "Willst du gratis PEP, fren? So geht's:\n\n"
+        "- **Faucet** – hole dir risikofrei gratis PEP: "
+        "[pepeblocks.com/faucet](https://pepeblocks.com/faucet)\n"
+        "- **Wallet** – Coinomi unterstützt natives PEP (Adressen beginnen mit P, nie 0x): "
+        "[coinomi.com](https://www.coinomi.com/)\n"
+        "- **Discord** – Community, Support und Airdrops: "
+        "[Discord beitreten](discord.gg/UnyMVjM9rv)\n"
+        "- **Tipping-Kanal** – laufende Airdrops: "
+        "[Kanal öffnen](https://discord.com/channels/1162499246503759962/1203748781590577222)\n\n"
+        "One coin. One community."
+    ),
+}
+
+
+@router.post("/get_coins")
+async def get_coins(request: Request):
+    """Return a concise guide with faucet, wallet, Discord and tipping channel links."""
+    language = await detect_language_from_request(request)
+    text = GET_COINS_TEXTS.get(language, GET_COINS_TEXTS["English"])
     return {"text": text}
 
 
@@ -603,11 +662,15 @@ async def _translate_text(text: Optional[str], language: str) -> Optional[str]:
 
 
 async def _resolve_target_language(
-    language: Optional[str], history: list[dict], client_host: str
+    language: Optional[str], history: list[dict], request: Request
 ) -> str:
-    """Pick the target language: explicit > last user message > geolocation > English."""
+    """Pick the target language: explicit > geolocation > last user message > English."""
     if language:
         return language
+
+    geo_language = await detect_language_from_request(request)
+    if geo_language and geo_language != "English":
+        return geo_language
 
     for turn in reversed(history):
         if turn.get("role") == "user":
@@ -618,7 +681,6 @@ async def _resolve_target_language(
                     return detected
                 break
 
-    geo_language = await detect_language(client_host)
     return geo_language or "English"
 
 
@@ -659,9 +721,7 @@ async def fetch_rare_pepe(req: RarePepeRequest, request: Request):
     elif filename and MEMES_DIR and MEMES_DIR.is_dir():
         url = f"{request.base_url}api/watermark?path=/memes/{quote(filename, safe='')}"
 
-    target_language = await _resolve_target_language(
-        req.language, req.history, request.client.host
-    )
+    target_language = await _resolve_target_language(req.language, req.history, request)
 
     description = pepe.get("description", "")
     explanation = pepe.get("explanation", "")

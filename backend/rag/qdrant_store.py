@@ -17,6 +17,7 @@ from qdrant_client.http.models import (
     FieldCondition,
     Filter,
     MatchValue,
+    PayloadSchemaType,
     PointStruct,
     VectorParams,
 )
@@ -128,6 +129,38 @@ def ensure_collection() -> bool:
             )
         return True
     except Exception:
+        return False
+
+
+def ensure_pepe_memes_collection(recreate: bool = False) -> bool:
+    """Create the `pepe_memes` collection and index required payload fields."""
+    client = get_qdrant_client()
+    if not client:
+        return False
+
+    try:
+        collections = {c.name for c in client.get_collections().collections}
+        if PEPE_MEMES_COLLECTION in collections:
+            if recreate:
+                client.delete_collection(collection_name=PEPE_MEMES_COLLECTION)
+                print(f"🗑️  Recreated collection: {PEPE_MEMES_COLLECTION}")
+            else:
+                return True
+
+        client.create_collection(
+            collection_name=PEPE_MEMES_COLLECTION,
+            vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE),
+        )
+
+        # Index required for the political-sensitivity filter used in searches.
+        client.create_payload_index(
+            collection_name=PEPE_MEMES_COLLECTION,
+            field_name="is_politically_sensitive",
+            field_schema=PayloadSchemaType.BOOL,
+        )
+        return True
+    except Exception as exc:
+        print(f"❌ Could not ensure collection: {exc}")
         return False
 
 

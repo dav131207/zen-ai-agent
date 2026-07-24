@@ -6,18 +6,47 @@ import ImageModal from './ImageModal'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
+const DEFAULT_LABELS = {
+  getcoins: 'Get Free Coins!',
+  meme: 'Random Pepe',
+  rarepepe: 'Rare Pepe',
+  social: 'Create Social Media Post',
+  socialShort: 'Social Post',
+  welcome: "Hello. I'm Professor Pepe, your AI agent. Type a command or choose one below.",
+  placeholder: 'Type a command...',
+}
+
+const LABELS = {
+  German: {
+    getcoins: 'Gratis Coins!',
+    meme: 'Zufälliger Pepe',
+    rarepepe: 'Rare Pepe',
+    social: 'Social Media Post erstellen',
+    socialShort: 'Post erstellen',
+    welcome: 'Hallo. Ich bin Professor Pepe, dein KI-Assistent. Tippe einen Befehl oder wähle unten einen aus.',
+    placeholder: 'Befehl eingeben...',
+  },
+}
+
 const COMMANDS = [
-  { id: 'getcoins', label: 'Get Free Coins!', shortLabel: 'Get Free Coins!', prompt: 'get coins' },
-  { id: 'meme', label: 'Random Pepe', shortLabel: 'Random Pepe', prompt: 'random meme' },
-  { id: 'rarepepe', label: 'Rare Pepe', shortLabel: 'Rare Pepe', prompt: 'rare pepe' },
-  { id: 'social', label: 'Create Social Media Post', shortLabel: 'Social Post', prompt: 'create social media post' },
+  { id: 'getcoins', prompt: 'get coins' },
+  { id: 'meme', prompt: 'random meme' },
+  { id: 'rarepepe', prompt: 'rare pepe' },
+  { id: 'social', prompt: 'create social media post' },
 ]
 
+function getLabels(language) {
+  return LABELS[language] || DEFAULT_LABELS
+}
+
 export default function Chat({ isDark }) {
+  const [language, setLanguage] = useState('English')
+  const labels = getLabels(language)
+
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      text: "Hello. I'm Professor Pepe, your AI agent. Type a command or choose one below.",
+      text: labels.welcome,
       time: formatTime(new Date()),
     },
   ])
@@ -26,6 +55,26 @@ export default function Chat({ isDark }) {
   const [typingText, setTypingText] = useState('')
   const [modalImage, setModalImage] = useState(null)
   const bottomRef = useRef(null)
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/language`)
+      .then((res) => (res.ok ? res.json() : { language: 'English' }))
+      .then((data) => setLanguage(data.language || 'English'))
+      .catch(() => setLanguage('English'))
+  }, [])
+
+  useEffect(() => {
+    setMessages((prev) => {
+      if (
+        prev.length === 1 &&
+        prev[0].role === 'assistant' &&
+        prev[0].text === DEFAULT_LABELS.welcome
+      ) {
+        return [{ ...prev[0], text: labels.welcome }]
+      }
+      return prev
+    })
+  }, [labels])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -285,16 +334,16 @@ export default function Chat({ isDark }) {
               <button
                 key={cmd.id}
                 type="button"
-                onClick={() => handleSubmit(null, { display: cmd.label, send: cmd.prompt })}
+                onClick={() => handleSubmit(null, { display: labels[cmd.id], send: cmd.prompt })}
                 disabled={loading}
-                className={`w-full whitespace-nowrap px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-[11px] font-medium text-center transition-all duration-200 hover:scale-[1.02] hover:shadow-md ${
+                className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-[11px] font-medium text-center leading-tight transition-all duration-200 hover:scale-[1.02] hover:shadow-md ${
                   isDark
                     ? 'bg-brand-800 text-brand-300 hover:bg-brand-700 hover:text-brand-50'
                     : 'bg-brand-100 text-brand-600 hover:bg-brand-200 hover:text-brand-900'
                 } disabled:opacity-50 disabled:hover:scale-100`}
               >
-                <span className="sm:hidden">{cmd.shortLabel}</span>
-                <span className="hidden sm:inline">{cmd.label}</span>
+                <span className="sm:hidden">{labels[`${cmd.id}Short`]}</span>
+                <span className="hidden sm:inline">{labels[cmd.id]}</span>
               </button>
             ))}
           </div>
@@ -308,7 +357,7 @@ export default function Chat({ isDark }) {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type a command..."
+              placeholder={labels.placeholder}
               className={`flex-1 bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 outline-none text-sm transition-colors min-w-0 ${
                 isDark ? 'placeholder:text-brand-500 text-brand-50' : 'placeholder:text-brand-400 text-brand-900'
               }`}

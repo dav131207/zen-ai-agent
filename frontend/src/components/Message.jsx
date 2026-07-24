@@ -66,7 +66,7 @@ export default function Message({ msg, isDark }) {
             />
           )}
           {msg.text && (
-            <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+            <div className="prose prose-sm dark:prose-invert max-w-none break-words [overflow-wrap:anywhere]">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                 {msg.emote ? `${textWithLinks.trim()} ![emote](${msg.emote})` : textWithLinks}
               </ReactMarkdown>

@@ -44,3 +44,7 @@ Thumbs.db
 # Render/Fly local files
 .render*
 .fly*
+
+# Local rare pepe image collection
+backend/memes/*
+!backend/memes/.gitkeep
