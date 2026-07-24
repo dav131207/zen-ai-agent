@@ -57,6 +57,18 @@
     vertical-align: -0.15em;
     margin: 0;
   }
+
+  .message-bubble-user .prose ul,
+  .message-bubble-agent .prose ul,
+  .message-bubble-user .prose ol,
+  .message-bubble-agent .prose ol {
+    padding-left: 1rem;
+  }
+
+  .message-bubble-user .prose li,
+  .message-bubble-agent .prose li {
+    overflow-wrap: break-word;
+  }
 }
 
 @layer utilities {
