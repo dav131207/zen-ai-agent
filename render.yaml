@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: professor-pepe
+    name: professor-pepe-agent
     runtime: docker
     repo: https://github.com/dav131207/zen-ai-agent
     plan: free
@@ -10,9 +10,9 @@ services:
       - key: GEMINI_API_KEY
         value: REPLACE_ME
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash
+        value: gemini-1.5-flash-latest
       - key: GEMINI_EMBEDDING_MODEL
-        value: models/gemini-embedding
+        value: models/gemini-embedding-001
       - key: IMAGE_API_BASE
         value: https://onlypepes.com
       - key: QDRANT_URL
