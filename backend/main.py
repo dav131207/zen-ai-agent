@@ -333,7 +333,10 @@ def _build_contents(topic: str, message: str, history: list[dict], context: str 
         system += (
             "\n\nYou are generating a social media post. "
             "Keep the final text under 280 characters. "
-            "Do not include images unless the user explicitly asks for one."
+            "Do not include images unless the user explicitly asks for one. "
+            "Always include @PepecoinNetwork. "
+            "When mentioning Dogecoin, Litecoin or Bitcoin, use their X/Twitter handles: "
+            "@dogecoin, @litecoin and @Bitcoin."
         )
 
     contents = [types.Content(role="user", parts=[types.Part(text=system)])]
@@ -352,6 +355,26 @@ def _build_contents(topic: str, message: str, history: list[dict], context: str 
         types.Content(role="user", parts=[types.Part(text=message)])
     )
     return contents
+
+
+def _format_social_post(text: str) -> str:
+    """Normalize coin names to X/Twitter handles and ensure @PepecoinNetwork."""
+    text = (text or "").strip()
+
+    # Convert standalone coin names to handles (only when not already a handle).
+    text = re.sub(r"(?<!@)\bDogecoin\b", "@dogecoin", text, flags=re.IGNORECASE)
+    text = re.sub(r"(?<!@)\bLitecoin\b", "@litecoin", text, flags=re.IGNORECASE)
+    text = re.sub(r"(?<!@)\bBitcoin\b", "@Bitcoin", text, flags=re.IGNORECASE)
+
+    # Ensure the PepecoinNetwork handle is present.
+    handle = "@PepecoinNetwork"
+    if not re.search(r"@pepecoinnetwork\b", text, re.IGNORECASE):
+        suffix = " " + handle
+        if len(text) + len(suffix) > 280:
+            text = text[: max(0, 280 - len(suffix))].rstrip()
+        text = text + suffix
+
+    return text[:280]
 
 
 def _gemini_client():
@@ -386,7 +409,7 @@ async def chat(req: ChatRequest):
             context = "\n\n---\n\n".join(chunks)
 
     contents = _build_contents(req.topic, req.message, req.history, context)
-    max_chars = 280 if _is_social_command(req.message) else None
+    is_social = _is_social_command(req.message)
 
     if req.stream:
         response = client.models.generate_content_stream(
@@ -395,19 +418,18 @@ async def chat(req: ChatRequest):
         )
 
         async def streamer():
-            chars_yielded = 0
+            # For social posts, buffer and normalize handles/length before sending.
+            if is_social:
+                full = ""
+                for chunk in response:
+                    full += chunk.text or ""
+                yield _format_social_post(full)
+                return
+
             for chunk in response:
                 text = chunk.text or ""
-                if not text:
-                    continue
-                if max_chars is not None:
-                    remaining = max_chars - chars_yielded
-                    if remaining <= 0:
-                        break
-                    if len(text) > remaining:
-                        text = text[:remaining]
-                    chars_yielded += len(text)
-                yield text
+                if text:
+                    yield text
 
         return StreamingResponse(streamer(), media_type="text/plain")
 
@@ -416,8 +438,8 @@ async def chat(req: ChatRequest):
         contents=contents,
     )
     text = response.text or ""
-    if max_chars is not None:
-        text = text[:max_chars]
+    if is_social:
+        text = _format_social_post(text)
     return {"text": text}
 
 
