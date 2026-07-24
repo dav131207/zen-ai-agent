@@ -304,21 +304,21 @@ export default function Chat({ isDark }) {
       {/* input area */}
       <div className={`relative z-20 px-3 sm:px-4 md:px-8 py-3 sm:py-4 bg-brand-800/70 dark:bg-brand-950/60 backdrop-blur-xl border-t border-brand-700/30 dark:border-white/5`}>
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-2 sm:mb-3">
             {COMMANDS.map((cmd) => (
               <button
                 key={cmd.id}
                 type="button"
                 onClick={() => handleSubmit(null, { display: labels[cmd.id], send: cmd.prompt })}
                 disabled={loading}
-                className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-[11px] font-medium text-center leading-tight transition-all duration-200 hover:scale-[1.02] hover:shadow-md ${
+                className={`w-full min-h-[44px] px-3 sm:px-3 py-2 rounded-full text-[11px] sm:text-[11px] font-medium text-center leading-tight transition-all duration-200 hover:scale-[1.02] hover:shadow-md ${
                   isDark
                     ? 'bg-brand-800 text-brand-300 hover:bg-brand-700 hover:text-brand-50'
                     : 'bg-brand-100 text-brand-600 hover:bg-brand-200 hover:text-brand-900'
                 } disabled:opacity-50 disabled:hover:scale-100`}
               >
-                <span className="sm:hidden">{labels[`${cmd.id}Short`]}</span>
-                <span className="hidden sm:inline">{labels[cmd.id]}</span>
+                <span className="md:hidden">{labels[`${cmd.id}Short`]}</span>
+                <span className="hidden md:inline">{labels[cmd.id]}</span>
               </button>
             ))}
           </div>
