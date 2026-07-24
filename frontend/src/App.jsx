@@ -9,7 +9,7 @@ const SUPPORT_ADDRESS = 'PhzpSqdSiMRNQ6ksCEDs4ufJtFfuyLCU9j'
 function SupportModal({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return
-    const timer = setTimeout(onClose, 2500)
+    const timer = setTimeout(onClose, 5000)
     return () => clearTimeout(timer)
   }, [isOpen, onClose])
 
@@ -32,7 +32,7 @@ function SupportModal({ isOpen, onClose }) {
           >
             <h2 className="text-lg sm:text-xl font-bold mb-2">Support the Project</h2>
             <p className="text-xs sm:text-sm text-brand-500 dark:text-brand-400 mb-4">
-              Send PEP to this native Pepecoin address:
+              Help me fund this Project. Thanks in advance, fren!
             </p>
             <div className="font-mono text-[10px] sm:text-xs break-all bg-brand-100 dark:bg-brand-900 rounded-xl p-3 mb-3">
               {SUPPORT_ADDRESS}
@@ -55,7 +55,7 @@ export default function App() {
   const { isDark } = useTheme()
   const [showSupport, setShowSupport] = useState(false)
 
-  const handleLogoClick = async () => {
+  const handleHeroClick = async () => {
     try {
       await navigator.clipboard.writeText(SUPPORT_ADDRESS)
     } catch {
@@ -72,11 +72,13 @@ export default function App() {
           <header className="relative z-10 flex items-center justify-center md:grid md:grid-cols-[1fr_auto_1fr] gap-2 px-3 sm:px-4 md:px-6 py-2 bg-brand-800/70 dark:bg-brand-950/60 backdrop-blur-xl border-b border-brand-700/30 dark:border-white/5">
             <div className="hidden md:block" />
 
-            <div className="flex items-center justify-center gap-2 md:gap-3 flex-1 md:flex-none min-w-0">
+            <div
+              onClick={handleHeroClick}
+              className="flex items-center justify-center gap-2 md:gap-3 flex-1 md:flex-none min-w-0 cursor-pointer"
+            >
               <motion.img
                 src="/logo.png"
                 alt="Professor Pepe Logo"
-                onClick={handleLogoClick}
                 initial={{ rotate: -10, scale: 0.8 }}
                 animate={{ rotate: [0, 5, -5, 0], y: [0, -4, 0] }}
                 transition={{
@@ -85,7 +87,7 @@ export default function App() {
                   scale: { type: 'spring', stiffness: 200 },
                 }}
                 whileHover={{ scale: 1.1, rotate: 10 }}
-                className="w-12 h-12 sm:w-14 sm:h-14 md:w-24 md:h-24 object-contain flex-shrink-0 cursor-pointer"
+                className="w-12 h-12 sm:w-14 sm:h-14 md:w-24 md:h-24 object-contain flex-shrink-0"
               />
               <div className="leading-tight text-center min-w-0">
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight whitespace-nowrap">
