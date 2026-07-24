@@ -7,10 +7,10 @@ import ImageModal from './ImageModal'
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
 const COMMANDS = [
+  { id: 'getcoins', label: 'Get Free Coins!', shortLabel: 'Get Free Coins!', prompt: 'get coins' },
   { id: 'meme', label: 'Random Meme', shortLabel: 'Meme', prompt: 'random meme' },
   { id: 'rarepepe', label: 'Rare Pepe', shortLabel: 'Rare Pepe', prompt: 'rare pepe' },
   { id: 'social', label: 'Create Social Media Post', shortLabel: 'Social Post', prompt: 'create social media post' },
-  { id: 'getcoins', label: 'Get Coins', shortLabel: 'Get Coins', prompt: 'get coins' },
 ]
 
 export default function Chat({ isDark }) {
