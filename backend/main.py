@@ -525,6 +525,15 @@ async def _resolve_target_language(
     return geo_language or "English"
 
 
+def _extract_pepe_image_url(pepe: dict) -> Optional[str]:
+    """Find an image URL in the Qdrant payload, trying several common field names."""
+    for key in ("url", "image_url", "image", "src", "link", "source", "permalink"):
+        value = pepe.get(key)
+        if isinstance(value, str) and value.startswith(("http://", "https://")):
+            return value
+    return None
+
+
 @router.post("/rare_pepe")
 async def fetch_rare_pepe(req: RarePepeRequest, request: Request):
     """Return a non-politically-sensitive rare pepe from the Qdrant collection."""
@@ -541,7 +550,7 @@ async def fetch_rare_pepe(req: RarePepeRequest, request: Request):
         raise HTTPException(status_code=404, detail="No rare pepe found")
 
     filename = pepe.get("filename", "")
-    external_url = pepe.get("url", "")
+    external_url = _extract_pepe_image_url(pepe)
     url = None
 
     if external_url:
