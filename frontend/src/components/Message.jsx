@@ -5,10 +5,18 @@ import remarkGfm from 'remark-gfm'
 function linkify(text) {
   if (!text) return text
   return text.replace(
-    /(?<!\]\()https?:\/\/[^\s<>"{}|\\^`[\]]+/g,
+    /(?<!\]\()(https?:\/\/[^\s<>"{}|\\^`[\]]+|discord\.gg\/[^\s<>"{}|\\^`[\]]+)/g,
     (url) => {
       const trimmed = url.replace(/[.,;:!?]+$/, '')
-      return `[${trimmed}](${trimmed})`
+      let display = 'Link'
+      try {
+        const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+        const u = new URL(normalized)
+        display = u.hostname.replace(/^www\./, '')
+      } catch {
+        display = 'Link'
+      }
+      return `[${display}](${trimmed})`
     }
   )
 }
