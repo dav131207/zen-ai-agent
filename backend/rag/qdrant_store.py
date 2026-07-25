@@ -6,6 +6,7 @@ or models/text-embedding-004 with output_dimensionality=3072).
 Supports both Qdrant Cloud and local Qdrant instances.
 """
 
+import hashlib
 import os
 import random
 from pathlib import Path
@@ -28,6 +29,9 @@ try:
 except ImportError:  # pragma: no cover
     genai = None
     types = None
+
+from rag.chunking import semantic_chunk_text
+from rag.retrieval import _keyword_search, merge_hybrid_results
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001")
@@ -164,13 +168,18 @@ def ensure_pepe_memes_collection(recreate: bool = False) -> bool:
         return False
 
 
-def ingest_text(text: str, source: str = "manual", chunk_size: int = 500, chunk_overlap: int = 100) -> int:
-    """Split text into chunks, embed them and store in Qdrant."""
+def _chunk_id(text: str, source: str) -> str:
+    """Create a stable, deterministic chunk identifier."""
+    return hashlib.sha256(f"{source}:{text}".encode("utf-8")).hexdigest()[:16]
+
+
+def ingest_text(text: str, source: str = "manual", chunk_size: int = 500, chunk_overlap: int = 50) -> int:
+    """Split text into semantic chunks, embed them and store in Qdrant."""
     client = get_qdrant_client()
     if not client or not ensure_collection():
         return 0
 
-    chunks = _chunk_text(text, chunk_size, chunk_overlap)
+    chunks = semantic_chunk_text(text, max_chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     if not chunks:
         return 0
 
@@ -183,7 +192,11 @@ def ingest_text(text: str, source: str = "manual", chunk_size: int = 500, chunk_
         PointStruct(
             id=existing_count + i,
             vector=embeddings[i],
-            payload={"text": chunks[i], "source": source},
+            payload={
+                "text": chunks[i],
+                "source": source,
+                "chunk_id": _chunk_id(chunks[i], source),
+            },
         )
         for i in range(len(chunks))
     ]
@@ -192,8 +205,13 @@ def ingest_text(text: str, source: str = "manual", chunk_size: int = 500, chunk_
     return len(points)
 
 
-def search_context(query: str, limit: int = 3) -> List[str]:
-    """Search Qdrant for the most relevant chunks."""
+def search_context(query: str, limit: int = 3, use_hybrid: bool = True) -> List[str]:
+    """
+    Search Qdrant for the most relevant chunks.
+
+    When use_hybrid is True, dense vector search is combined with a simple
+    keyword search over payloads and the results are fused with RRF.
+    """
     client = get_qdrant_client()
     if not client or not ensure_collection():
         return []
@@ -203,13 +221,23 @@ def search_context(query: str, limit: int = 3) -> List[str]:
         if embeddings is None:
             return []
         embedding = embeddings[0]
-        response = client.query_points(
+
+        vector_response = client.query_points(
             collection_name=QDRANT_COLLECTION,
             query=embedding,
-            limit=limit,
+            limit=limit * 4 if use_hybrid else limit,
             with_payload=True,
         )
-        return [r.payload.get("text", "") for r in response.points if r.payload]
+        vector_points = [r for r in vector_response.points if r.payload]
+
+        if not use_hybrid:
+            return [p.payload.get("text", "") for p in vector_points[:limit]]
+
+        keyword_results = _keyword_search(
+            client, QDRANT_COLLECTION, query, limit=limit * 4
+        )
+        fused = merge_hybrid_results(vector_points, keyword_results, final_limit=limit)
+        return [p.payload.get("text", "") for p in fused if p.payload]
     except Exception:
         return []
 
@@ -270,17 +298,6 @@ def get_random_pepe_meme(max_attempts: int = 10) -> Optional[dict]:
         pass
 
     return None
-
-
-def _chunk_text(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
-    """Simple sliding-window chunking by characters."""
-    chunks = []
-    start = 0
-    while start < len(text):
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start += chunk_size - chunk_overlap
-    return chunks
 
 
 def ingest_file(path: Path) -> int:
