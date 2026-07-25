@@ -317,8 +317,8 @@ export default function Chat({ isDark }) {
                     : 'bg-brand-100 text-brand-600 hover:bg-brand-200 hover:text-brand-900'
                 } disabled:opacity-50 disabled:hover:scale-100`}
               >
-                <span className="md:hidden">{labels[`${cmd.id}Short`]}</span>
-                <span className="hidden md:inline">{labels[cmd.id]}</span>
+                <span className="md:hidden block">{labels?.[`${cmd.id}Short`] || labels?.[cmd.id] || cmd.id}</span>
+                <span className="hidden md:block">{labels?.[cmd.id] || cmd.id}</span>
               </button>
             ))}
           </div>
