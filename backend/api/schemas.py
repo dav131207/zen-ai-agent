@@ -1,0 +1,47 @@
+"""Pydantic request/response schemas for the API."""
+
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+
+class ChatRequest(BaseModel):
+    topic: str = Field(default="", description="Topic context for the conversation")
+    message: str = Field(..., min_length=1, description="User message")
+    history: list[dict] = Field(default_factory=list, description="Previous turns")
+    stream: bool = Field(default=True, description="Stream the response")
+    use_rag: bool = Field(default=True, description="Use Qdrant RAG context")
+
+
+class ImageRequest(BaseModel):
+    topic: Optional[str] = Field(default=None, description="Search term for the image")
+
+
+class EmoteRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="Text to pick an emote for")
+
+
+class IngestTextRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="Text to ingest into Qdrant")
+
+
+class RarePepeRequest(BaseModel):
+    query: Optional[str] = Field(
+        default="rare pepe",
+        description="Search term for the rare pepe collection",
+    )
+    language: Optional[str] = Field(
+        default=None,
+        description="Target language for the description/explanation",
+    )
+    history: list[dict] = Field(
+        default_factory=list,
+        description="Previous conversation turns to infer user language",
+    )
+
+
+class EventRequest(BaseModel):
+    event_type: str = Field(..., description="Type of event, e.g. command_click, message_send")
+    command: Optional[str] = Field(default=None, description="Command identifier if applicable")
+    message: Optional[str] = Field(default=None, description="User message if applicable")
+    metadata: Optional[dict] = Field(default=None, description="Additional event metadata")
