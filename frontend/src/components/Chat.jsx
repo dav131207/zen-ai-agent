@@ -304,7 +304,7 @@ export default function Chat({ isDark }) {
       {/* input area */}
       <div className={`relative z-20 px-3 sm:px-4 md:px-8 py-3 sm:py-4 bg-brand-800/70 dark:bg-brand-950/60 backdrop-blur-xl border-t border-brand-700/30 dark:border-white/5`}>
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-2 sm:mb-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 sm:mb-3">
             {COMMANDS.map((cmd) => (
               <button
                 key={cmd.id}
