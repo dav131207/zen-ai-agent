@@ -6,6 +6,7 @@ Serves a Gemini-powered chat API and proxies image requests from OnlyPepes.
 import os
 import random
 import re
+import time
 from contextlib import asynccontextmanager
 from io import BytesIO
 from pathlib import Path
@@ -21,7 +22,7 @@ load_dotenv()
 
 from fastapi import APIRouter, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -326,7 +327,81 @@ async def lifespan(app: FastAPI):
     await http.aclose()
 
 
+# Simple in-memory rate limiting per IP + endpoint.
+_rate_limit_store: dict[str, list[float]] = {}
+
+RATE_LIMITS = {
+    "/api/chat": (30, 60),
+    "/api/rare_pepe": (20, 60),
+    "/api/image": (30, 60),
+    "/api/get_coins": (20, 60),
+    "/api/emote": (60, 60),
+    "/api/event": (120, 60),
+    "/api/analytics": (60, 60),
+    "/api/watermark": (100, 60),
+    "/api/ingest/text": (10, 60),
+    "/api/ingest/file": (10, 60),
+}
+
+RATE_LIMIT_EXEMPT = {"/api/health", "/api/language"}
+
+
+def _rate_limit_key(request: Request) -> str:
+    """Build a rate-limit key from the real client IP and the request path."""
+    ip = _get_client_host(request)
+    return f"{ip}:{request.url.path}"
+
+
+def _is_rate_limited(request: Request) -> tuple[bool, dict]:
+    """Check whether the current request exceeds its per-IP rate limit."""
+    path = request.url.path
+    if not path.startswith("/api") or path in RATE_LIMIT_EXEMPT:
+        return False, {}
+
+    limit_config = RATE_LIMITS.get(path)
+    if not limit_config:
+        # Default conservative limit for any unmatched API route.
+        limit_config = (30, 60)
+
+    max_requests, window_seconds = limit_config
+    key = _rate_limit_key(request)
+    now = time.time()
+    window_start = now - window_seconds
+
+    timestamps = _rate_limit_store.get(key, [])
+    timestamps = [ts for ts in timestamps if ts > window_start]
+    timestamps.append(now)
+    _rate_limit_store[key] = timestamps
+
+    if len(timestamps) > max_requests:
+        retry_after = int(window_seconds - (now - timestamps[0]))
+        return True, {
+            "retry_after": max(1, retry_after),
+            "limit": max_requests,
+            "window": window_seconds,
+        }
+
+    return False, {}
+
+
 app = FastAPI(title="Professor Pepe", version="1.0.0", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    """Reject requests that exceed per-IP rate limits."""
+    limited, details = _is_rate_limited(request)
+    if limited:
+        return JSONResponse(
+            status_code=429,
+            content={
+                "detail": "Rate limit exceeded. Please slow down.",
+                "retry_after": details["retry_after"],
+            },
+            headers={"Retry-After": str(details["retry_after"])},
+        )
+    return await call_next(request)
+
 
 app.add_middleware(
     CORSMiddleware,
