@@ -4,6 +4,7 @@ import { Send, Loader2 } from 'lucide-react'
 import Message from './Message'
 import ImageModal from './ImageModal'
 import { DEFAULT_LABELS, getLabels } from '../lib/commandLabels'
+import { measureLatency, trackEvent } from '../lib/analytics'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
@@ -59,10 +60,13 @@ export default function Chat({ isDark }) {
     if (e && e.preventDefault) e.preventDefault()
     const displayText = command ? command.display : input.trim()
     const sendText = command ? command.send : input.trim()
+    const commandId = command ? command.id : null
     if (!displayText || !sendText || loading) return
 
+    const startTime = performance.now()
+
     if (command) {
-      trackEvent('command_click', { command: command.id || sendText })
+      trackEvent('command_click', { command: commandId })
     } else {
       trackEvent('message_send', { message: sendText })
     }
@@ -96,6 +100,7 @@ export default function Chat({ isDark }) {
         ])
       } finally {
         setLoading(false)
+        trackEvent('request_latency', { latency_ms: measureLatency(startTime), command: commandId || sendText })
       }
       return
     }
@@ -122,6 +127,7 @@ export default function Chat({ isDark }) {
         ])
       } finally {
         setLoading(false)
+        trackEvent('request_latency', { latency_ms: measureLatency(startTime), command: commandId || sendText })
       }
       return
     }
@@ -196,6 +202,7 @@ export default function Chat({ isDark }) {
       ])
     } finally {
       setLoading(false)
+      trackEvent('request_latency', { latency_ms: measureLatency(startTime), command: commandId || sendText })
     }
   }
 
@@ -251,18 +258,6 @@ export default function Chat({ isDark }) {
     })
     if (!res.ok) throw new Error('Could not load get coins info')
     return res.json()
-  }
-
-  const trackEvent = async (eventType, data = {}) => {
-    try {
-      await fetch(`${API_BASE}/api/event`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event_type: eventType, ...data }),
-      })
-    } catch {
-      // Silently ignore analytics errors so they never block the user.
-    }
   }
 
   return (

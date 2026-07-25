@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from './hooks/useTheme'
+import AdminDashboard from './components/AdminDashboard'
 import Chat from './components/Chat'
 import ParticlesBackground from './components/ParticlesBackground'
+import { trackEvent } from './lib/analytics'
 
 const SUPPORT_ADDRESS = 'PhzpSqdSiMRNQ6ksCEDs4ufJtFfuyLCU9j'
 
@@ -57,12 +59,18 @@ export default function App() {
   const [showSupport, setShowSupport] = useState(false)
 
   const handleHeroClick = async () => {
+    trackEvent('conversion', { conversion_type: 'support' })
     try {
       await navigator.clipboard.writeText(SUPPORT_ADDRESS)
     } catch {
       // ignore
     }
     setShowSupport(true)
+  }
+
+  const isAdmin = typeof window !== 'undefined' && window.location.pathname === '/admin'
+  if (isAdmin) {
+    return <AdminDashboard />
   }
 
   return (

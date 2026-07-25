@@ -10,7 +10,7 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from PIL import Image
 
-from analytics import get_summary, track_event
+from analytics import get_summary
 from api.schemas import (
     ChatRequest,
     EmoteRequest,
@@ -88,6 +88,11 @@ async def record_event(req: EventRequest, request: Request):
         message=req.message,
         language=language,
         country=country,
+        session_id=req.session_id,
+        user_agent=req.user_agent or request.headers.get("User-Agent"),
+        feedback=req.feedback,
+        conversion_type=req.conversion_type,
+        latency_ms=req.latency_ms,
         metadata=req.metadata,
     )
     return {"status": "ok"}
@@ -110,14 +115,6 @@ async def chat(req: ChatRequest, request: Request):
 
     target_language = await resolve_target_language(
         None, req.history, request, http
-    )
-    track_event(
-        client_ip=get_client_host(request),
-        event_type="chat_message",
-        message=req.message[:500],
-        language=target_language,
-        country=request.headers.get("CF-IPCountry"),
-        metadata={"is_social": is_social_command(req.message)},
     )
 
     response = await generate_chat_response(
@@ -151,13 +148,6 @@ async def fetch_image(req: ImageRequest, request: Request):
 async def get_coins(request: Request):
     """Return a concise guide with faucet, wallet, Discord and tipping channel links."""
     language = await detect_language_from_request(request, http)
-    track_event(
-        client_ip=get_client_host(request),
-        event_type="command_click",
-        command="get_coins",
-        language=language,
-        country=request.headers.get("CF-IPCountry"),
-    )
     text = GET_COINS_TEXTS.get(language)
     if text is None:
         text = GET_COINS_TEXTS["English"]
@@ -181,14 +171,6 @@ async def fetch_rare_pepe(req: RarePepeRequest, request: Request):
     query = (req.query or "").strip().lower()
     no_context = not query or query == "rare pepe"
     target_language = await resolve_target_language(req.language, req.history, request, http)
-    track_event(
-        client_ip=get_client_host(request),
-        event_type="command_click",
-        command="rare_pepe",
-        message=query[:200],
-        language=target_language,
-        country=request.headers.get("CF-IPCountry"),
-    )
 
     if no_context:
         pepe = get_random_pepe_meme()

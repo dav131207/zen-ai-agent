@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { ThumbsDown, ThumbsUp } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { trackEvent } from '../lib/analytics'
 
 function linkify(text) {
   if (!text) return text
@@ -22,13 +25,31 @@ function linkify(text) {
 }
 
 const markdownComponents = {
-  a: ({ node, ...props }) => (
-    <a {...props} target="_blank" rel="noopener noreferrer" />
-  ),
+  a: ({ node, href, ...props }) => {
+    const handleClick = () => {
+      const hrefLower = (href || '').toLowerCase()
+      let conversionType = 'link'
+      if (hrefLower.includes('discord')) conversionType = 'discord'
+      else if (hrefLower.includes('pepeblocks.com/faucet')) conversionType = 'faucet'
+      else if (hrefLower.includes('coinomi')) conversionType = 'wallet'
+      trackEvent('conversion', { conversion_type: conversionType, url: href })
+    }
+    return <a href={href} onClick={handleClick} target="_blank" rel="noopener noreferrer" {...props} />
+  },
 }
 
 export default function Message({ msg, isDark }) {
   const isUser = msg.role === 'user'
+  const [feedback, setFeedback] = useState(null)
+
+  const handleFeedback = (type) => {
+    if (feedback) return
+    setFeedback(type)
+    trackEvent('feedback', {
+      feedback: type,
+      message: msg.text?.slice(0, 200),
+    })
+  }
 
   const textWithLinks = linkify(msg.text)
 
@@ -73,6 +94,34 @@ export default function Message({ msg, isDark }) {
             </div>
           )}
         </div>
+        {!isUser && msg.text && (
+          <div className="flex items-center gap-1 px-1">
+            <button
+              onClick={() => handleFeedback('thumbs_up')}
+              disabled={feedback}
+              className={`p-1 rounded-md transition-colors ${
+                feedback === 'thumbs_up'
+                  ? 'text-green-500'
+                  : 'text-brand-400 hover:text-green-500 dark:text-brand-500 dark:hover:text-green-400'
+              } disabled:opacity-50`}
+              aria-label="Helpful"
+            >
+              <ThumbsUp size={12} className="sm:w-3.5 sm:h-3.5" />
+            </button>
+            <button
+              onClick={() => handleFeedback('thumbs_down')}
+              disabled={feedback}
+              className={`p-1 rounded-md transition-colors ${
+                feedback === 'thumbs_down'
+                  ? 'text-red-500'
+                  : 'text-brand-400 hover:text-red-500 dark:text-brand-500 dark:hover:text-red-400'
+              } disabled:opacity-50`}
+              aria-label="Not helpful"
+            >
+              <ThumbsDown size={12} className="sm:w-3.5 sm:h-3.5" />
+            </button>
+          </div>
+        )}
         <span className="text-[9px] sm:text-[10px] text-brand-400 dark:text-brand-500 px-1">
           {msg.time}
         </span>
