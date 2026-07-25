@@ -61,6 +61,12 @@ export default function Chat({ isDark }) {
     const sendText = command ? command.send : input.trim()
     if (!displayText || !sendText || loading) return
 
+    if (command) {
+      trackEvent('command_click', { command: sendText })
+    } else {
+      trackEvent('message_send', { message: sendText })
+    }
+
     const userMsg = { role: 'user', text: displayText, time: formatTime(new Date()) }
     setMessages((prev) => [...prev, userMsg])
     if (!command) setInput('')
@@ -245,6 +251,18 @@ export default function Chat({ isDark }) {
     })
     if (!res.ok) throw new Error('Could not load get coins info')
     return res.json()
+  }
+
+  const trackEvent = async (eventType, data = {}) => {
+    try {
+      await fetch(`${API_BASE}/api/event`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_type: eventType, ...data }),
+      })
+    } catch {
+      // Silently ignore analytics errors so they never block the user.
+    }
   }
 
   return (

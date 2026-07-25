@@ -25,6 +25,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from analytics import get_summary, track_event
 from rag import (
     get_random_pepe_meme,
     ingest_file,
@@ -308,6 +309,17 @@ class RarePepeRequest(BaseModel):
     )
 
 
+class EventRequest(BaseModel):
+    event_type: str = Field(..., description="Type of event, e.g. command_click, message_send")
+    command: Optional[str] = Field(default=None, description="Command identifier if applicable")
+    message: Optional[str] = Field(default=None, description="User message if applicable")
+    metadata: Optional[dict] = Field(default=None, description="Additional event metadata")
+
+
+class AnalyticsQuery(BaseModel):
+    days: int = Field(default=7, ge=1, le=90, description="Number of days to summarise")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
@@ -441,6 +453,29 @@ async def language(request: Request):
     return {"language": lang}
 
 
+@router.post("/event")
+async def record_event(req: EventRequest, request: Request):
+    """Record an analytics event from the frontend."""
+    country = request.headers.get("CF-IPCountry")
+    language = await detect_language_from_request(request)
+    track_event(
+        client_ip=_get_client_host(request),
+        event_type=req.event_type,
+        command=req.command,
+        message=req.message,
+        language=language,
+        country=country,
+        metadata=req.metadata,
+    )
+    return {"status": "ok"}
+
+
+@router.get("/analytics")
+async def analytics_summary(days: int = 7):
+    """Return an aggregated analytics summary for the last N days."""
+    return get_summary(days=days)
+
+
 @router.post("/chat")
 async def chat(req: ChatRequest, request: Request):
     client = _gemini_client()
@@ -452,6 +487,14 @@ async def chat(req: ChatRequest, request: Request):
             context = "\n\n---\n\n".join(chunks)
 
     target_language = await _resolve_target_language(None, req.history, request)
+    track_event(
+        client_ip=_get_client_host(request),
+        event_type="chat_message",
+        message=req.message[:500],
+        language=target_language,
+        country=request.headers.get("CF-IPCountry"),
+        metadata={"is_social": _is_social_command(req.message)},
+    )
     contents = _build_contents(
         req.topic, req.message, req.history, context, language=target_language
     )
@@ -590,6 +633,13 @@ GET_COINS_TEXTS = {
 async def get_coins(request: Request):
     """Return a concise guide with faucet, wallet, Discord and tipping channel links."""
     language = await detect_language_from_request(request)
+    track_event(
+        client_ip=_get_client_host(request),
+        event_type="command_click",
+        command="get_coins",
+        language=language,
+        country=request.headers.get("CF-IPCountry"),
+    )
     text = GET_COINS_TEXTS.get(language)
     if text is None:
         text = GET_COINS_TEXTS["English"]
@@ -707,6 +757,15 @@ async def fetch_rare_pepe(req: RarePepeRequest, request: Request):
     """Return a non-politically-sensitive rare pepe from the Qdrant collection."""
     query = (req.query or "").strip().lower()
     no_context = not query or query == "rare pepe"
+    target_language = await _resolve_target_language(req.language, req.history, request)
+    track_event(
+        client_ip=_get_client_host(request),
+        event_type="command_click",
+        command="rare_pepe",
+        message=query[:200],
+        language=target_language,
+        country=request.headers.get("CF-IPCountry"),
+    )
 
     if no_context:
         pepe = get_random_pepe_meme()
@@ -729,8 +788,6 @@ async def fetch_rare_pepe(req: RarePepeRequest, request: Request):
         url = f"{request.base_url}api/watermark?url={quote(external_url, safe='')}"
     elif filename and MEMES_DIR and MEMES_DIR.is_dir():
         url = f"{request.base_url}api/watermark?path=/memes/{quote(filename, safe='')}"
-
-    target_language = await _resolve_target_language(req.language, req.history, request)
 
     description = pepe.get("description", "")
     explanation = pepe.get("explanation", "")
