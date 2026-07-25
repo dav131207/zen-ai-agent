@@ -62,7 +62,7 @@ export default function Chat({ isDark }) {
     if (!displayText || !sendText || loading) return
 
     if (command) {
-      trackEvent('command_click', { command: sendText })
+      trackEvent('command_click', { command: command.id || sendText })
     } else {
       trackEvent('message_send', { message: sendText })
     }
@@ -327,7 +327,7 @@ export default function Chat({ isDark }) {
               <button
                 key={cmd.id}
                 type="button"
-                onClick={() => handleSubmit(null, { display: labels[cmd.id], send: cmd.prompt })}
+                onClick={() => handleSubmit(null, { id: cmd.id, display: labels[cmd.id], send: cmd.prompt })}
                 disabled={loading}
                 className={`w-full min-h-[44px] px-3 sm:px-3 py-2 rounded-full text-[11px] sm:text-[11px] font-medium text-center leading-tight transition-all duration-200 hover:scale-[1.02] hover:shadow-md ${
                   isDark
