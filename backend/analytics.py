@@ -335,6 +335,24 @@ def get_summary(days: int = 7) -> dict[str, Any]:
         )
     ]
 
+    recent_feedback = [
+        {
+            "timestamp": row["timestamp"],
+            "feedback": row["feedback"],
+            "message": row["message"],
+        }
+        for row in conn.execute(
+            """
+            SELECT timestamp, feedback, message
+            FROM events
+            WHERE timestamp >= ? AND event_type = 'feedback' AND message IS NOT NULL
+            ORDER BY timestamp DESC
+            LIMIT 50
+            """,
+            (since,),
+        )
+    ]
+
     avg_latency = conn.execute(
         """
         SELECT AVG(latency_ms) FROM events
@@ -358,6 +376,7 @@ def get_summary(days: int = 7) -> dict[str, Any]:
         "top_topics": top_topics,
         "avg_latency_ms": round(avg_latency) if avg_latency else None,
         "daily_events": daily_events,
+        "recent_feedback": recent_feedback,
     }
 
 
