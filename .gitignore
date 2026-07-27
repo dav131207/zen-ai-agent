@@ -28,6 +28,7 @@ frontend/node_modules/
 # Build artifacts
 build/
 dist/
+!frontend/dist/
 
 # IDE
 .vscode/
