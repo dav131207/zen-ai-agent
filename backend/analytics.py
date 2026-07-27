@@ -324,7 +324,7 @@ def get_summary(days: int = 7) -> dict[str, Any]:
         {"keyword": row["keyword"], "count": row["count"]}
         for row in conn.execute(
             """
-            SELECT keyword, COUNT(*) as count
+            SELECT json_each.value AS keyword, COUNT(*) as count
             FROM events, json_each(topic_keywords)
             WHERE timestamp >= ? AND topic_keywords IS NOT NULL
             GROUP BY keyword
