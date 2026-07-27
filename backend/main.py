@@ -55,22 +55,9 @@ if MEMES_DIR and MEMES_DIR.is_dir():
 frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 index_html = frontend_dist / "index.html"
 
-if index_html.is_file():
-    # Mount static files first, then fallback to index.html for SPA routing
-    from fastapi.responses import FileResponse
-
-    app.mount("/", StaticFiles(directory=str(frontend_dist), html=False), name="static")
-
-    @app.get("/{path:path}")
-    async def spa_fallback(path: str):
-        """Serve index.html for any non-API route without file extension (SPA routing)."""
-        if path.startswith("api/") or "." in path.split("/")[-1]:
-            return {"detail": "Not Found"}
-        return FileResponse(str(index_html))
-
-    logger.warning("[STARTUP] SPA fallback configured for all non-API routes")
-else:
-    logger.warning(f"[STARTUP] WARNING: index.html not found at {index_html}")
+if frontend_dist.is_dir():
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="static")
+    logger.warning("[STARTUP] Successfully mounted frontend at /")
 
 
 if __name__ == "__main__":
