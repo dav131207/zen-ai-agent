@@ -50,8 +50,17 @@ if MEMES_DIR and MEMES_DIR.is_dir():
     app.mount("/memes", StaticFiles(directory=str(MEMES_DIR)), name="memes")
 
 frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+print(f"[DEBUG] Frontend dist path: {frontend_dist}")
+print(f"[DEBUG] Frontend dist exists: {frontend_dist.exists()}")
+print(f"[DEBUG] Frontend dist is_dir: {frontend_dist.is_dir()}")
+if frontend_dist.exists():
+    print(f"[DEBUG] Frontend dist contents: {list(frontend_dist.iterdir())[:5]}")
+
 if frontend_dist.is_dir():
     app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="static")
+    print(f"[DEBUG] Successfully mounted frontend at /")
+else:
+    print(f"[DEBUG] Failed to mount frontend - directory not found")
 
 
 if __name__ == "__main__":
