@@ -59,6 +59,15 @@ if frontend_dist.is_dir():
     app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="static")
     logger.warning("[STARTUP] Successfully mounted frontend at /")
 
+    # Fallback route for SPA: catch-all non-API routes and serve index.html
+    from fastapi.responses import FileResponse
+
+    @app.get("/{path:path}")
+    async def spa_catch_all(path: str):
+        if path.startswith("api/"):
+            return {"detail": "Not Found"}
+        return FileResponse(str(index_html))
+
 
 if __name__ == "__main__":
     import uvicorn
