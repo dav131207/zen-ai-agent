@@ -56,13 +56,15 @@ frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 index_html = frontend_dist / "index.html"
 
 if index_html.is_file():
-    # Serve index.html for SPA routing (catch all non-API routes)
+    # Mount static files first, then fallback to index.html for SPA routing
     from fastapi.responses import FileResponse
+
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=False), name="static")
 
     @app.get("/{path:path}")
     async def spa_fallback(path: str):
-        """Serve index.html for any non-API route (SPA routing)."""
-        if path.startswith("api/"):
+        """Serve index.html for any non-API route without file extension (SPA routing)."""
+        if path.startswith("api/") or "." in path.split("/")[-1]:
             return {"detail": "Not Found"}
         return FileResponse(str(index_html))
 
