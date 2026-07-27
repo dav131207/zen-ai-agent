@@ -66,7 +66,7 @@ if index_html.is_file():
             return {"detail": "Not Found"}
         return FileResponse(str(index_html))
 
-    logger.warning(f"[STARTUP] SPA fallback configured at /{path:path}")
+    logger.warning("[STARTUP] SPA fallback configured for all non-API routes")
 else:
     logger.warning(f"[STARTUP] WARNING: index.html not found at {index_html}")
 
