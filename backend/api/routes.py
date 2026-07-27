@@ -114,7 +114,7 @@ async def verify_token(request: Request):
 
 
 @router.get("/analytics")
-async def analytics_summary(days: int = 7, request: Request):
+async def analytics_summary(request: Request, days: int = 7):
     """Return an aggregated analytics summary for the last N days."""
     auth_header = request.headers.get("Authorization")
     check_admin_auth(auth_header)
