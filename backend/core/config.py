@@ -30,3 +30,5 @@ QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "professor_pepe")
 
 SYSTEM_PROMPT_PATH = BACKEND_DIR / "persona" / "system_prompt.txt"
+
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")

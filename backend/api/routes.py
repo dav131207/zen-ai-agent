@@ -10,7 +10,8 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from PIL import Image
 
-from analytics import get_summary
+from analytics import get_summary, track_event
+from core.auth import check_admin_auth
 from api.schemas import (
     ChatRequest,
     EmoteRequest,
@@ -98,9 +99,25 @@ async def record_event(req: EventRequest, request: Request):
     return {"status": "ok"}
 
 
+@router.post("/admin/verify-token")
+async def verify_token(request: Request):
+    """Verify if the provided token is valid."""
+    auth_header = request.headers.get("Authorization")
+    try:
+        check_admin_auth(auth_header)
+        return {"valid": True}
+    except HTTPException:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid token",
+        )
+
+
 @router.get("/analytics")
-async def analytics_summary(days: int = 7):
+async def analytics_summary(days: int = 7, request: Request = None):
     """Return an aggregated analytics summary for the last N days."""
+    auth_header = request.headers.get("Authorization")
+    check_admin_auth(auth_header)
     return get_summary(days=days)
 
 

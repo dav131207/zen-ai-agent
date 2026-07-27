@@ -1,6 +1,80 @@
 import { useEffect, useState } from 'react'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
+const TOKEN_KEY = 'admin_token'
+
+function LoginForm({ onLogin }) {
+  const [token, setToken] = useState('')
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/verify-token`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      if (!res.ok) {
+        throw new Error('Invalid token')
+      }
+      localStorage.setItem(TOKEN_KEY, token)
+      onLogin(token)
+    } catch (err) {
+      setError(err.message || 'Authentication failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-brand-50 dark:bg-brand-900">
+      <div className="w-full max-w-md">
+        <div className="bg-white dark:bg-brand-800 rounded-2xl p-6 shadow-sm border border-brand-100 dark:border-white/10">
+          <h1 className="text-2xl font-black mb-2 text-brand-900 dark:text-brand-50">Professor Pepe</h1>
+          <p className="text-sm text-brand-600 dark:text-brand-400 mb-6">Analytics Dashboard</p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2 text-brand-900 dark:text-brand-50">
+                Admin Token
+              </label>
+              <input
+                type="password"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="Enter your admin token"
+                className="w-full px-4 py-2 border border-brand-200 dark:border-white/10 rounded-lg bg-white dark:bg-brand-700 text-brand-900 dark:text-brand-50 placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-accent"
+                disabled={loading}
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-500">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !token}
+              className="w-full px-4 py-2 bg-accent hover:bg-accent/90 disabled:bg-brand-300 dark:disabled:bg-brand-600 text-white font-semibold rounded-lg transition-colors"
+            >
+              {loading ? 'Verifying...' : 'Login'}
+            </button>
+          </form>
+
+          <p className="text-xs text-brand-600 dark:text-brand-400 mt-4">
+            Set the <code className="bg-brand-100 dark:bg-brand-700 px-1 rounded">ADMIN_TOKEN</code> environment variable to access.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function Card({ title, children }) {
   return (
@@ -28,16 +102,43 @@ function CountList({ data }) {
 }
 
 export default function AdminDashboard() {
+  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY) || null)
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [days, setDays] = useState(7)
 
+  const handleLogin = (newToken) => {
+    setToken(newToken)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem(TOKEN_KEY)
+    setToken(null)
+    setData(null)
+  }
+
   useEffect(() => {
-    fetch(`${API_BASE}/api/analytics?days=${days}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Failed to load'))))
+    if (!token) return
+
+    fetch(`${API_BASE}/api/analytics?days=${days}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (res.status === 401) {
+          handleLogout()
+          throw new Error('Token expired')
+        }
+        return res.ok ? res.json() : Promise.reject(new Error('Failed to load'))
+      })
       .then(setData)
       .catch(setError)
-  }, [days])
+  }, [days, token])
+
+  if (!token) {
+    return <LoginForm onLogin={handleLogin} />
+  }
 
   if (error) {
     return (
@@ -63,7 +164,15 @@ export default function AdminDashboard() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-black">Professor Pepe Analytics</h1>
-          <a href="/" className="text-sm text-accent hover:underline">Back to Chat</a>
+          <div className="flex gap-2">
+            <button
+              onClick={handleLogout}
+              className="text-sm px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+            >
+              Logout
+            </button>
+            <a href="/" className="text-sm px-3 py-1 bg-accent hover:bg-accent/90 text-white rounded-lg transition-colors">Back to Chat</a>
+          </div>
         </div>
 
         <div className="mb-6">
