@@ -49,24 +49,25 @@ app.add_middleware(
 
 app.include_router(router, prefix="/api")
 
+from fastapi.responses import FileResponse
+
 if MEMES_DIR and MEMES_DIR.is_dir():
     app.mount("/memes", StaticFiles(directory=str(MEMES_DIR)), name="memes")
 
 frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 index_html = frontend_dist / "index.html"
 
-if frontend_dist.is_dir():
-    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="static")
-    logger.warning("[STARTUP] Successfully mounted frontend at /")
+@app.get("/{path:path}")
+async def spa_fallback(path: str):
+    """Serve static files or index.html for SPA routing."""
+    if path.startswith("api/"):
+        return {"detail": "Not Found"}
 
-    # Fallback route for SPA: catch-all non-API routes and serve index.html
-    from fastapi.responses import FileResponse
+    file_path = frontend_dist / path
+    if file_path.is_file():
+        return FileResponse(file_path)
 
-    @app.get("/{path:path}")
-    async def spa_catch_all(path: str):
-        if path.startswith("api/"):
-            return {"detail": "Not Found"}
-        return FileResponse(str(index_html))
+    return FileResponse(index_html)
 
 
 if __name__ == "__main__":
