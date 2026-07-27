@@ -3,9 +3,13 @@ services:
     name: professor-pepe-agent
     runtime: docker
     repo: https://github.com/dav131207/zen-ai-agent
-    plan: free
+    plan: starter
     region: oregon
     healthCheckPath: /api/health
+    disk:
+      name: analytics-data
+      mountPath: /app/backend/data
+      sizeGB: 1
     envVars:
       - key: GEMINI_API_KEY
         value: REPLACE_ME
