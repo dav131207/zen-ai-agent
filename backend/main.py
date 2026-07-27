@@ -5,6 +5,7 @@ This file only wires the application together. Business logic lives in
 services/, API routes in api/routes.py and shared utilities in core/.
 """
 
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -16,6 +17,8 @@ from api.routes import router
 from core.config import MEMES_DIR
 from core.http import close_http
 from core.security import is_rate_limited, rate_limit_response
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -50,17 +53,22 @@ if MEMES_DIR and MEMES_DIR.is_dir():
     app.mount("/memes", StaticFiles(directory=str(MEMES_DIR)), name="memes")
 
 frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
-print(f"[DEBUG] Frontend dist path: {frontend_dist}")
-print(f"[DEBUG] Frontend dist exists: {frontend_dist.exists()}")
-print(f"[DEBUG] Frontend dist is_dir: {frontend_dist.is_dir()}")
-if frontend_dist.exists():
-    print(f"[DEBUG] Frontend dist contents: {list(frontend_dist.iterdir())[:5]}")
+index_html = frontend_dist / "index.html"
 
-if frontend_dist.is_dir():
-    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="static")
-    print(f"[DEBUG] Successfully mounted frontend at /")
+if index_html.is_file():
+    # Serve index.html for SPA routing (catch all non-API routes)
+    from fastapi.responses import FileResponse
+
+    @app.get("/{path:path}")
+    async def spa_fallback(path: str):
+        """Serve index.html for any non-API route (SPA routing)."""
+        if path.startswith("api/"):
+            return {"detail": "Not Found"}
+        return FileResponse(str(index_html))
+
+    logger.warning(f"[STARTUP] SPA fallback configured at /{path:path}")
 else:
-    print(f"[DEBUG] Failed to mount frontend - directory not found")
+    logger.warning(f"[STARTUP] WARNING: index.html not found at {index_html}")
 
 
 if __name__ == "__main__":
