@@ -47,6 +47,9 @@ class EventRequest(BaseModel):
     session_id: Optional[str] = Field(default=None, description="Frontend session cookie id")
     user_agent: Optional[str] = Field(default=None, description="Browser user agent string")
     feedback: Optional[str] = Field(default=None, description=" thumbs_up or thumbs_down")
+    user_message: Optional[str] = Field(
+        default=None, description="Preceding user message, for feedback events"
+    )
     conversion_type: Optional[str] = Field(default=None, description="e.g. support, discord, faucet, wallet")
     latency_ms: Optional[int] = Field(default=None, description="Request latency in milliseconds")
     metadata: Optional[dict] = Field(default=None, description="Additional event metadata")

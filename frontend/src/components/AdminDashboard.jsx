@@ -70,12 +70,15 @@ function LoginForm({ onLogin }) {
   )
 }
 
-function Card({ title, subtitle, children, className = '' }) {
+function Card({ title, subtitle, children, className = '', action }) {
   return (
     <div className={`bg-white dark:bg-brand-800 rounded-2xl p-4 shadow-sm border border-brand-100 dark:border-white/10 ${className}`}>
-      <div className="mb-3">
-        <h3 className="text-sm font-bold text-brand-900 dark:text-brand-50">{title}</h3>
-        {subtitle && <p className="text-[11px] text-brand-500 dark:text-brand-400">{subtitle}</p>}
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-bold text-brand-900 dark:text-brand-50">{title}</h3>
+          {subtitle && <p className="text-[11px] text-brand-500 dark:text-brand-400">{subtitle}</p>}
+        </div>
+        {action}
       </div>
       {children}
     </div>
@@ -172,6 +175,53 @@ function DailyActivityChart({ days }) {
   )
 }
 
+function ExportButtons({ token, days }) {
+  const [downloading, setDownloading] = useState(null)
+
+  const download = async (format) => {
+    setDownloading(format)
+    try {
+      const res = await fetch(`${API_BASE}/api/analytics/export?days=${days}&format=${format}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `feedback_${days}d.${format === 'jsonl' ? 'jsonl' : 'json'}`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      // silently ignore; button just stops spinning
+    } finally {
+      setDownloading(null)
+    }
+  }
+
+  return (
+    <div className="flex gap-1.5">
+      <button
+        onClick={() => download('json')}
+        disabled={downloading !== null}
+        className="text-[11px] px-2 py-1 rounded-lg border border-brand-200 dark:border-white/10 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-700 disabled:opacity-50 transition-colors"
+      >
+        {downloading === 'json' ? 'Exporting...' : '⬇ JSON'}
+      </button>
+      <button
+        onClick={() => download('jsonl')}
+        disabled={downloading !== null}
+        className="text-[11px] px-2 py-1 rounded-lg border border-brand-200 dark:border-white/10 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-700 disabled:opacity-50 transition-colors"
+        title="JSON Lines — one record per line, common for RAG/eval pipelines"
+      >
+        {downloading === 'jsonl' ? 'Exporting...' : '⬇ JSONL'}
+      </button>
+    </div>
+  )
+}
+
 function FeedbackList({ items }) {
   const [filter, setFilter] = useState('all')
 
@@ -205,23 +255,28 @@ function FeedbackList({ items }) {
       {filtered.length === 0 ? (
         <p className="text-xs text-brand-500 dark:text-brand-400">No feedback yet.</p>
       ) : (
-        <ul className="space-y-2 max-h-64 overflow-y-auto">
+        <ul className="space-y-3 max-h-72 overflow-y-auto">
           {filtered.map((f, i) => (
-            <li key={i} className="flex items-start gap-2 text-xs sm:text-sm border-b border-brand-100 dark:border-white/5 pb-2 last:border-0">
-              <span
-                className={`mt-0.5 flex-shrink-0 ${
-                  f.feedback === 'thumbs_up'
-                    ? 'text-[#0ca30c]'
-                    : 'text-[#d03b3b]'
-                }`}
-              >
-                {f.feedback === 'thumbs_up' ? '👍' : '👎'}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-brand-800 dark:text-brand-200 line-clamp-2">{f.message}</p>
-                <p className="text-[10px] text-brand-500 dark:text-brand-400">
-                  {new Date(f.timestamp).toLocaleString()}
-                </p>
+            <li key={i} className="text-xs sm:text-sm border-b border-brand-100 dark:border-white/5 pb-2 last:border-0">
+              <div className="flex items-start gap-2">
+                <span
+                  className={`mt-0.5 flex-shrink-0 ${
+                    f.feedback === 'thumbs_up' ? 'text-[#0ca30c]' : 'text-[#d03b3b]'
+                  }`}
+                >
+                  {f.feedback === 'thumbs_up' ? '👍' : '👎'}
+                </span>
+                <div className="min-w-0 flex-1">
+                  {f.user_message && (
+                    <p className="text-brand-500 dark:text-brand-400 italic line-clamp-1">
+                      Asked: {f.user_message}
+                    </p>
+                  )}
+                  <p className="text-brand-800 dark:text-brand-200 line-clamp-2">{f.message}</p>
+                  <p className="text-[10px] text-brand-500 dark:text-brand-400">
+                    {new Date(f.timestamp).toLocaleString()}
+                  </p>
+                </div>
               </div>
             </li>
           ))}
@@ -378,7 +433,12 @@ export default function AdminDashboard() {
               </li>
             </ul>
           </Card>
-          <Card title="Recent Feedback" subtitle="Which responses users liked or disliked" className="lg:col-span-2">
+          <Card
+            title="Recent Feedback"
+            subtitle="Which responses users liked or disliked"
+            className="lg:col-span-2"
+            action={<ExportButtons token={token} days={days} />}
+          >
             <FeedbackList items={data.recent_feedback} />
           </Card>
         </div>

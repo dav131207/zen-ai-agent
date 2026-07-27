@@ -38,7 +38,7 @@ const markdownComponents = {
   },
 }
 
-export default function Message({ msg, isDark }) {
+export default function Message({ msg, isDark, userMessage }) {
   const isUser = msg.role === 'user'
   const [feedback, setFeedback] = useState(null)
 
@@ -48,6 +48,7 @@ export default function Message({ msg, isDark }) {
     trackEvent('feedback', {
       feedback: type,
       message: msg.text?.slice(0, 200),
+      user_message: userMessage?.slice(0, 200),
     })
   }
 

@@ -73,6 +73,10 @@ def init_db() -> None:
         CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id)
         """
     )
+    try:
+        conn.execute("ALTER TABLE events ADD COLUMN user_message TEXT")
+    except sqlite3.OperationalError:
+        pass  # column already exists
     conn.commit()
 
 
@@ -126,6 +130,7 @@ def track_event(
     conversion_type: Optional[str] = None,
     latency_ms: Optional[int] = None,
     metadata: Optional[dict[str, Any]] = None,
+    user_message: Optional[str] = None,
 ) -> None:
     """Persist a single analytics event."""
     conn = _get_conn()
@@ -164,8 +169,8 @@ def track_event(
         INSERT INTO events
         (timestamp, session_hash, session_id, event_type, command, message, language, country,
          user_agent, device_type, os, browser, feedback, conversion_type, latency_ms,
-         topic_keywords, metadata, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         topic_keywords, metadata, created_at, user_message)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             now.isoformat(),
@@ -186,6 +191,7 @@ def track_event(
             topic_keywords,
             json.dumps(metadata) if metadata else None,
             int(time.time()),
+            user_message,
         ),
     )
     conn.commit()
@@ -340,10 +346,11 @@ def get_summary(days: int = 7) -> dict[str, Any]:
             "timestamp": row["timestamp"],
             "feedback": row["feedback"],
             "message": row["message"],
+            "user_message": row["user_message"],
         }
         for row in conn.execute(
             """
-            SELECT timestamp, feedback, message
+            SELECT timestamp, feedback, message, user_message
             FROM events
             WHERE timestamp >= ? AND event_type = 'feedback' AND message IS NOT NULL
             ORDER BY timestamp DESC
@@ -378,6 +385,37 @@ def get_summary(days: int = 7) -> dict[str, Any]:
         "daily_events": daily_events,
         "recent_feedback": recent_feedback,
     }
+
+
+def get_feedback_export(days: int = 90) -> list[dict[str, Any]]:
+    """Return every feedback event in the window, shaped for RAG evaluation pipelines.
+
+    Each record pairs the user's question with the response it was rated on,
+    so a downstream pipeline can split "good" vs "bad" outputs directly.
+    """
+    conn = _get_conn()
+    since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+
+    rows = conn.execute(
+        """
+        SELECT timestamp, feedback, message, user_message, language, session_id
+        FROM events
+        WHERE timestamp >= ? AND event_type = 'feedback' AND message IS NOT NULL
+        ORDER BY timestamp ASC
+        """,
+        (since,),
+    )
+    return [
+        {
+            "timestamp": row["timestamp"],
+            "question": row["user_message"],
+            "response": row["message"],
+            "feedback": row["feedback"],
+            "language": row["language"],
+            "session_id": row["session_id"],
+        }
+        for row in rows
+    ]
 
 
 # Initialise the database on import.

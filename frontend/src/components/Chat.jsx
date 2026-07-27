@@ -265,13 +265,19 @@ export default function Chat({ isDark }) {
       {/* messages */}
       <div className="flex-1 overflow-y-auto scrollbar-thin px-3 sm:px-4 md:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
         <AnimatePresence initial={false}>
-          {messages.map((msg, idx) => (
-            <div key={idx} onClick={(e) => {
-              if (e.target.tagName === 'IMG') setModalImage(e.target.src)
-            }}>
-              <Message msg={msg} isDark={isDark} />
-            </div>
-          ))}
+          {messages.map((msg, idx) => {
+            const precedingUserMessage =
+              msg.role === 'assistant'
+                ? [...messages.slice(0, idx)].reverse().find((m) => m.role === 'user')?.text
+                : null
+            return (
+              <div key={idx} onClick={(e) => {
+                if (e.target.tagName === 'IMG') setModalImage(e.target.src)
+              }}>
+                <Message msg={msg} isDark={isDark} userMessage={precedingUserMessage} />
+              </div>
+            )
+          })}
         </AnimatePresence>
 
         {typingText && (

@@ -1,5 +1,6 @@
 """API routes for Professor Pepe."""
 
+import json
 import random
 from io import BytesIO
 from pathlib import Path
@@ -7,10 +8,10 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from PIL import Image
 
-from analytics import get_summary, track_event
+from analytics import get_feedback_export, get_summary, track_event
 from core.auth import check_admin_auth
 from api.schemas import (
     ChatRequest,
@@ -95,6 +96,7 @@ async def record_event(req: EventRequest, request: Request):
         conversion_type=req.conversion_type,
         latency_ms=req.latency_ms,
         metadata=req.metadata,
+        user_message=req.user_message,
     )
     return {"status": "ok"}
 
@@ -119,6 +121,30 @@ async def analytics_summary(request: Request, days: int = 7):
     auth_header = request.headers.get("Authorization")
     check_admin_auth(auth_header)
     return get_summary(days=days)
+
+
+@router.get("/analytics/export")
+async def analytics_export(request: Request, days: int = 90, format: str = "json"):
+    """Export feedback events (question + response + rating) for a RAG eval pipeline."""
+    auth_header = request.headers.get("Authorization")
+    check_admin_auth(auth_header)
+
+    records = get_feedback_export(days=days)
+
+    if format == "jsonl":
+        body = "\n".join(json.dumps(r, ensure_ascii=False) for r in records)
+        return Response(
+            content=body,
+            media_type="application/x-ndjson",
+            headers={"Content-Disposition": f'attachment; filename="feedback_{days}d.jsonl"'},
+        )
+
+    body = json.dumps(records, ensure_ascii=False, indent=2)
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="feedback_{days}d.json"'},
+    )
 
 
 @router.post("/chat")
