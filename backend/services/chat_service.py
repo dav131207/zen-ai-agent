@@ -3,6 +3,7 @@
 import re
 from typing import AsyncGenerator, Optional
 
+from analytics import track_event
 from core.config import DEFAULT_MODEL, SYSTEM_PROMPT_PATH
 from core.providers import get_llm_provider
 from core.providers.base import LLMError
@@ -143,15 +144,24 @@ async def generate_chat_response(
 
     if stream:
         async def streamer():
-            if is_social:
-                full = ""
-                async for chunk in provider.stream(DEFAULT_MODEL, contents):
-                    full += chunk
-                yield format_social_post(full)
-                return
+            try:
+                if is_social:
+                    full = ""
+                    async for chunk in provider.stream(DEFAULT_MODEL, contents):
+                        full += chunk
+                    yield format_social_post(full)
+                    return
 
-            async for chunk in provider.stream(DEFAULT_MODEL, contents):
-                yield chunk
+                async for chunk in provider.stream(DEFAULT_MODEL, contents):
+                    yield chunk
+            except Exception as e:
+                track_event(
+                    client_ip=None,
+                    event_type="error",
+                    command="chat_stream",
+                    message=str(e)[:300],
+                )
+                yield "\n\n⚠️ Sorry fren, something went wrong generating this response. Please try again."
 
         return streamer()
 

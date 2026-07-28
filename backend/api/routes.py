@@ -151,10 +151,20 @@ async def analytics_export(request: Request, days: int = 90, format: str = "json
 async def chat(req: ChatRequest, request: Request):
     """Handle a chat message and stream or return the LLM response."""
     context = ""
+    rag_chunk_count = 0
     if req.use_rag:
         chunks = search_context(req.message, limit=3)
+        rag_chunk_count = len(chunks)
         if chunks:
             context = "\n\n---\n\n".join(chunks)
+
+    track_event(
+        client_ip=get_client_host(request),
+        event_type="rag_retrieval",
+        message=req.message,
+        session_id=request.cookies.get("pepe_session"),
+        metadata={"chunk_count": rag_chunk_count, "use_rag": req.use_rag},
+    )
 
     target_language = await resolve_target_language(
         None, req.history, request, http
@@ -170,8 +180,12 @@ async def chat(req: ChatRequest, request: Request):
     )
 
     if req.stream:
-        return StreamingResponse(response, media_type="text/plain")
-    return {"text": response}
+        return StreamingResponse(
+            response,
+            media_type="text/plain",
+            headers={"X-RAG-Chunks": str(rag_chunk_count)},
+        )
+    return {"text": response, "rag_chunk_count": rag_chunk_count}
 
 
 @router.post("/image")

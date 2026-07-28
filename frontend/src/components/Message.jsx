@@ -38,7 +38,7 @@ const markdownComponents = {
   },
 }
 
-export default function Message({ msg, isDark, userMessage }) {
+export default function Message({ msg, isDark, userMessage, ragChunks }) {
   const isUser = msg.role === 'user'
   const [feedback, setFeedback] = useState(null)
 
@@ -49,6 +49,7 @@ export default function Message({ msg, isDark, userMessage }) {
       feedback: type,
       message: msg.text?.slice(0, 200),
       user_message: userMessage?.slice(0, 200),
+      metadata: typeof ragChunks === 'number' ? { rag_chunk_count: ragChunks } : undefined,
     })
   }
 

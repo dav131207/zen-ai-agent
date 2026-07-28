@@ -163,6 +163,7 @@ export default function Chat({ isDark }) {
         throw new Error(err.detail || `HTTP ${response.status}`)
       }
 
+      const ragChunks = Number(response.headers.get('X-RAG-Chunks') || 0)
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let fullText = ''
@@ -188,6 +189,7 @@ export default function Chat({ isDark }) {
           image: imageUrl,
           emote: emoteUrl,
           time: formatTime(new Date()),
+          ragChunks,
         },
       ])
       setTypingText('')
@@ -274,7 +276,7 @@ export default function Chat({ isDark }) {
               <div key={idx} onClick={(e) => {
                 if (e.target.tagName === 'IMG') setModalImage(e.target.src)
               }}>
-                <Message msg={msg} isDark={isDark} userMessage={precedingUserMessage} />
+                <Message msg={msg} isDark={isDark} userMessage={precedingUserMessage} ragChunks={msg.ragChunks} />
               </div>
             )
           })}

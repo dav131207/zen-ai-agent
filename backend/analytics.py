@@ -360,6 +360,75 @@ def get_summary(days: int = 7) -> dict[str, Any]:
         )
     ]
 
+    rag_row = conn.execute(
+        """
+        SELECT
+            SUM(CASE WHEN CAST(json_extract(metadata, '$.chunk_count') AS INTEGER) = 0 THEN 1 ELSE 0 END) as no_context,
+            SUM(CASE WHEN CAST(json_extract(metadata, '$.chunk_count') AS INTEGER) > 0 THEN 1 ELSE 0 END) as with_context,
+            COUNT(*) as total
+        FROM events
+        WHERE timestamp >= ? AND event_type = 'rag_retrieval'
+        """,
+        (since,),
+    ).fetchone()
+    rag_total = rag_row["total"] or 0
+    rag_coverage = {
+        "with_context": rag_row["with_context"] or 0,
+        "no_context": rag_row["no_context"] or 0,
+        "total": rag_total,
+        "coverage_pct": round((rag_row["with_context"] or 0) / rag_total * 100) if rag_total else None,
+    }
+
+    feedback_by_rag_context: dict[str, dict[str, int]] = {}
+    for row in conn.execute(
+        """
+        SELECT
+            CASE WHEN CAST(json_extract(metadata, '$.rag_chunk_count') AS INTEGER) > 0
+                 THEN 'with_context' ELSE 'no_context' END as bucket,
+            feedback,
+            COUNT(*) as count
+        FROM events
+        WHERE timestamp >= ? AND event_type = 'feedback'
+              AND json_extract(metadata, '$.rag_chunk_count') IS NOT NULL
+        GROUP BY bucket, feedback
+        """,
+        (since,),
+    ):
+        feedback_by_rag_context.setdefault(row["bucket"], {})[row["feedback"]] = row["count"]
+
+    error_counts = {
+        row["command"] or "unknown": row["count"]
+        for row in conn.execute(
+            """
+            SELECT command, COUNT(*) as count
+            FROM events
+            WHERE timestamp >= ? AND event_type = 'error'
+            GROUP BY command
+            ORDER BY count DESC
+            """,
+            (since,),
+        )
+    }
+
+    recent_errors = [
+        {
+            "timestamp": row["timestamp"],
+            "command": row["command"],
+            "message": row["message"],
+            "metadata": json.loads(row["metadata"]) if row["metadata"] else None,
+        }
+        for row in conn.execute(
+            """
+            SELECT timestamp, command, message, metadata
+            FROM events
+            WHERE timestamp >= ? AND event_type = 'error'
+            ORDER BY timestamp DESC
+            LIMIT 30
+            """,
+            (since,),
+        )
+    ]
+
     avg_latency = conn.execute(
         """
         SELECT AVG(latency_ms) FROM events
@@ -384,6 +453,10 @@ def get_summary(days: int = 7) -> dict[str, Any]:
         "avg_latency_ms": round(avg_latency) if avg_latency else None,
         "daily_events": daily_events,
         "recent_feedback": recent_feedback,
+        "rag_coverage": rag_coverage,
+        "feedback_by_rag_context": feedback_by_rag_context,
+        "error_counts": error_counts,
+        "recent_errors": recent_errors,
     }
 
 
@@ -398,24 +471,28 @@ def get_feedback_export(days: int = 90) -> list[dict[str, Any]]:
 
     rows = conn.execute(
         """
-        SELECT timestamp, feedback, message, user_message, language, session_id
+        SELECT timestamp, feedback, message, user_message, language, session_id, metadata
         FROM events
         WHERE timestamp >= ? AND event_type = 'feedback' AND message IS NOT NULL
         ORDER BY timestamp ASC
         """,
         (since,),
     )
-    return [
-        {
-            "timestamp": row["timestamp"],
-            "question": row["user_message"],
-            "response": row["message"],
-            "feedback": row["feedback"],
-            "language": row["language"],
-            "session_id": row["session_id"],
-        }
-        for row in rows
-    ]
+    records = []
+    for row in rows:
+        meta = json.loads(row["metadata"]) if row["metadata"] else {}
+        records.append(
+            {
+                "timestamp": row["timestamp"],
+                "question": row["user_message"],
+                "response": row["message"],
+                "feedback": row["feedback"],
+                "language": row["language"],
+                "session_id": row["session_id"],
+                "rag_chunk_count": meta.get("rag_chunk_count"),
+            }
+        )
+    return records
 
 
 # Initialise the database on import.

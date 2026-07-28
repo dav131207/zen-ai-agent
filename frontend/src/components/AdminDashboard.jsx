@@ -222,6 +222,28 @@ function ExportButtons({ token, days }) {
   )
 }
 
+function RecentErrorsList({ items }) {
+  if (!items || items.length === 0) {
+    return <p className="text-xs text-brand-500 dark:text-brand-400">No errors — clean run.</p>
+  }
+  return (
+    <ul className="space-y-2 max-h-64 overflow-y-auto">
+      {items.map((e, i) => (
+        <li key={i} className="text-xs sm:text-sm border-b border-brand-100 dark:border-white/5 pb-2 last:border-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[#d03b3b] font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#d03b3b]/10">
+              {e.metadata?.status_code || 'ERR'}
+            </span>
+            <span className="text-brand-700 dark:text-brand-300 font-medium truncate">{e.command}</span>
+          </div>
+          <p className="text-brand-500 dark:text-brand-400 line-clamp-1">{e.message}</p>
+          <p className="text-[10px] text-brand-500 dark:text-brand-400">{new Date(e.timestamp).toLocaleString()}</p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function FeedbackList({ items }) {
   const [filter, setFilter] = useState('all')
 
@@ -341,6 +363,20 @@ export default function AdminDashboard() {
   const feedbackTotal = thumbsUp + thumbsDown
   const satisfactionPct = feedbackTotal > 0 ? Math.round((thumbsUp / feedbackTotal) * 100) : null
 
+  const ragCoverage = data.rag_coverage || {}
+  const totalErrors = Object.values(data.error_counts || {}).reduce((a, b) => a + b, 0)
+
+  const satisfactionFor = (bucket) => {
+    const b = data.feedback_by_rag_context?.[bucket]
+    if (!b) return null
+    const up = b.thumbs_up || 0
+    const down = b.thumbs_down || 0
+    const total = up + down
+    return total > 0 ? Math.round((up / total) * 100) : null
+  }
+  const satisfactionWithContext = satisfactionFor('with_context')
+  const satisfactionNoContext = satisfactionFor('no_context')
+
   return (
     <div className="min-h-screen bg-brand-50 dark:bg-brand-900 text-brand-900 dark:text-brand-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
@@ -370,7 +406,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* KPI row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
           <StatTile label="Total Events" value={data.total_events} />
           <StatTile label="Unique Sessions" value={data.unique_sessions} />
           <StatTile
@@ -382,6 +418,17 @@ export default function AdminDashboard() {
                 : satisfactionPct >= 60
                 ? 'text-[#0ca30c]'
                 : 'text-[#d03b3b]'
+            }
+          />
+          <StatTile
+            label="RAG Coverage"
+            value={ragCoverage.coverage_pct !== null && ragCoverage.coverage_pct !== undefined ? `${ragCoverage.coverage_pct}%` : '—'}
+            accentClass={
+              ragCoverage.coverage_pct === null || ragCoverage.coverage_pct === undefined
+                ? undefined
+                : ragCoverage.coverage_pct >= 60
+                ? 'text-[#0ca30c]'
+                : 'text-[#fab219]'
             }
           />
           <StatTile label="Avg Latency" value={data.avg_latency_ms ? `${data.avg_latency_ms}ms` : '—'} />
@@ -440,6 +487,48 @@ export default function AdminDashboard() {
             action={<ExportButtons token={token} days={days} />}
           >
             <FeedbackList items={data.recent_feedback} />
+          </Card>
+        </div>
+
+        {/* RAG quality — does having knowledge-base context actually help? */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <Card title="Knowledge Base Coverage" subtitle="Share of questions answered with Qdrant context">
+            <ul className="space-y-2">
+              <li className="flex justify-between text-sm">
+                <span className="text-brand-700 dark:text-brand-300">With context</span>
+                <span className="font-bold tabular-nums">{ragCoverage.with_context ?? 0}</span>
+              </li>
+              <li className="flex justify-between text-sm">
+                <span className="text-brand-700 dark:text-brand-300">No context found</span>
+                <span className="font-bold tabular-nums">{ragCoverage.no_context ?? 0}</span>
+              </li>
+            </ul>
+          </Card>
+          <Card title="Satisfaction by Context" subtitle="Does missing context hurt ratings?">
+            <ul className="space-y-2">
+              <li className="flex justify-between text-sm">
+                <span className="text-brand-700 dark:text-brand-300">With context</span>
+                <span className="font-bold tabular-nums">
+                  {satisfactionWithContext !== null ? `${satisfactionWithContext}%` : '—'}
+                </span>
+              </li>
+              <li className="flex justify-between text-sm">
+                <span className="text-brand-700 dark:text-brand-300">No context</span>
+                <span className="font-bold tabular-nums">
+                  {satisfactionNoContext !== null ? `${satisfactionNoContext}%` : '—'}
+                </span>
+              </li>
+            </ul>
+          </Card>
+        </div>
+
+        {/* Errors — what's breaking for users */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <Card title="Errors by Endpoint" subtitle={`${totalErrors} total in range`} className="lg:col-span-1">
+            <HBarList data={data.error_counts} emptyLabel="No errors — clean run." />
+          </Card>
+          <Card title="Recent Errors" className="lg:col-span-2">
+            <RecentErrorsList items={data.recent_errors} />
           </Card>
         </div>
       </div>

@@ -9,14 +9,18 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from analytics import track_event
 from api.routes import router
 from core.config import MEMES_DIR
 from core.http import close_http
 from core.security import is_rate_limited, rate_limit_response
+from services.language_service import get_client_host
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +50,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(HTTPException)
+async def track_http_errors(request: Request, exc: HTTPException):
+    """Log every 4xx/5xx so failure modes show up in the analytics dashboard."""
+    track_event(
+        client_ip=get_client_host(request),
+        event_type="error",
+        command=request.url.path,
+        message=str(exc.detail)[:300],
+        session_id=request.cookies.get("pepe_session"),
+        metadata={"status_code": exc.status_code},
+    )
+    return await http_exception_handler(request, exc)
+
+
+@app.exception_handler(Exception)
+async def track_unhandled_errors(request: Request, exc: Exception):
+    """Catch anything unexpected so a bug doesn't fail silently in production."""
+    track_event(
+        client_ip=get_client_host(request),
+        event_type="error",
+        command=request.url.path,
+        message=str(exc)[:300],
+        session_id=request.cookies.get("pepe_session"),
+        metadata={"status_code": 500, "type": type(exc).__name__},
+    )
+    logger.exception("Unhandled exception on %s", request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
 
 app.include_router(router, prefix="/api")
 
