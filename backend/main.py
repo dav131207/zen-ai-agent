@@ -97,9 +97,10 @@ async def spa_fallback(path: str):
     if path.startswith("api/"):
         return {"detail": "Not Found"}
 
-    file_path = frontend_dist / path
-    if file_path.is_file():
-        return FileResponse(file_path)
+    file_path = (frontend_dist / path).resolve()
+    if frontend_dist.resolve() in file_path.parents or file_path == frontend_dist.resolve():
+        if file_path.is_file():
+            return FileResponse(file_path)
 
     return FileResponse(index_html)
 

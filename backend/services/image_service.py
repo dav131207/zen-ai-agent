@@ -149,4 +149,4 @@ def validate_memes_path(path: str) -> Path:
         if MEMES_DIR.resolve() not in file_path.parents and file_path != MEMES_DIR.resolve():
             raise HTTPException(status_code=400, detail="Invalid image path")
         return file_path
-    return Path(path).expanduser().resolve()
+    raise HTTPException(status_code=400, detail="Invalid image path")
