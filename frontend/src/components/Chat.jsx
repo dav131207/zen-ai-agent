@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Loader2 } from 'lucide-react'
 import Message from './Message'
 import ImageModal from './ImageModal'
+import SocialPostModal from './SocialPostModal'
 import { DEFAULT_LABELS, getLabels } from '../lib/commandLabels'
 import { measureLatency, trackEvent } from '../lib/analytics'
 
@@ -30,7 +31,14 @@ export default function Chat({ isDark }) {
   const [loading, setLoading] = useState(false)
   const [typingText, setTypingText] = useState('')
   const [modalImage, setModalImage] = useState(null)
+  const [isSocialModalOpen, setIsSocialModalOpen] = useState(false)
   const bottomRef = useRef(null)
+
+  const handleSocialSubmit = ({ language, tonality, topic }) => {
+    setIsSocialModalOpen(false)
+    const prompt = `create a social media post. Language: ${language}. Tonality: ${tonality}. Topic: ${topic}`
+    handleSubmit(null, { id: 'social', display: labels['social'], send: prompt })
+  }
 
   useEffect(() => {
     fetch(`${API_BASE}/api/language`)
@@ -330,7 +338,13 @@ export default function Chat({ isDark }) {
               <button
                 key={cmd.id}
                 type="button"
-                onClick={() => handleSubmit(null, { id: cmd.id, display: labels[cmd.id], send: cmd.prompt })}
+                onClick={() => {
+                  if (cmd.id === 'social') {
+                    setIsSocialModalOpen(true)
+                  } else {
+                    handleSubmit(null, { id: cmd.id, display: labels[cmd.id], send: cmd.prompt })
+                  }
+                }}
                 disabled={loading}
                 className={`w-full min-h-[44px] px-3 sm:px-3 py-2 rounded-full text-[11px] sm:text-[11px] font-medium text-center leading-tight transition-all duration-200 hover:scale-[1.02] hover:shadow-md ${
                   isDark
@@ -371,6 +385,12 @@ export default function Chat({ isDark }) {
       </div>
 
       <ImageModal src={modalImage} onClose={() => setModalImage(null)} />
+      <SocialPostModal
+        isOpen={isSocialModalOpen}
+        onClose={() => setIsSocialModalOpen(false)}
+        onSubmit={handleSocialSubmit}
+        isDark={isDark}
+      />
     </div>
   )
 }

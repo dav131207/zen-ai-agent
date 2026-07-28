@@ -43,19 +43,29 @@ class GeminiProvider(LLMProvider):
             result.append(types.Content(role=role, parts=[types.Part(text=text)]))
         return result
 
-    def generate(self, model: str, contents: list) -> str:
+    def generate(self, model: str, contents: list, **kwargs) -> str:
         self._ensure_ready()
+        config = None
+        if "temperature" in kwargs:
+            config = types.GenerateContentConfig(temperature=kwargs["temperature"])
+            
         response = self._client.models.generate_content(
             model=model,
             contents=self._to_gemini_contents(contents),
+            config=config,
         )
         return response.text or ""
 
-    async def stream(self, model: str, contents: list) -> AsyncGenerator[str, None]:
+    async def stream(self, model: str, contents: list, **kwargs) -> AsyncGenerator[str, None]:
         self._ensure_ready()
+        config = None
+        if "temperature" in kwargs:
+            config = types.GenerateContentConfig(temperature=kwargs["temperature"])
+            
         for chunk in self._client.models.generate_content_stream(
             model=model,
             contents=self._to_gemini_contents(contents),
+            config=config,
         ):
             text = chunk.text or ""
             if text:

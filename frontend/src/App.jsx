@@ -57,6 +57,12 @@ function SupportModal({ isOpen, onClose }) {
 export default function App() {
   const { isDark } = useTheme()
   const [showSupport, setShowSupport] = useState(false)
+  const [showSplash, setShowSplash] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 2000)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleHeroClick = async () => {
     trackEvent('conversion', { conversion_type: 'support' })
@@ -74,7 +80,43 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${isDark ? 'bg-brand-900 text-brand-50' : 'bg-brand-50 text-brand-900'}`}>
+    <>
+      <AnimatePresence>
+        {showSplash && (
+          <motion.div
+            key="splash"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-brand-900"
+          >
+            <motion.img
+              src="/logo.png"
+              alt="Loading"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ 
+                scale: [0.8, 1.05, 1],
+                opacity: 1,
+                rotate: [0, -5, 5, 0]
+              }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
+              className="w-32 h-32 md:w-48 md:h-48 object-contain drop-shadow-[0_0_25px_rgba(38,154,76,0.6)]"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+              className="mt-8 flex items-center justify-center gap-2 mx-auto"
+            >
+              <div className="w-2.5 h-2.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-2.5 h-2.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-2.5 h-2.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className={`min-h-screen transition-colors duration-500 ${isDark ? 'bg-brand-900 text-brand-50' : 'bg-brand-50 text-brand-900'}`}>
       <ParticlesBackground isDark={isDark} />
       <div className="flex h-screen overflow-hidden">
         <main className="flex-1 flex flex-col relative">
@@ -120,5 +162,6 @@ export default function App() {
         </main>
       </div>
     </div>
+    </>
   )
 }

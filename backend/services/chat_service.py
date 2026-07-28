@@ -59,8 +59,10 @@ def build_contents(
             "Keep the final text under 280 characters. "
             "Do not include images unless the user explicitly asks for one. "
             "Always include @PepecoinNetwork. "
-            "When mentioning Dogecoin, Litecoin or Bitcoin, use their X/Twitter handles: "
-            "@dogecoin, @litecoin and @Bitcoin."
+            "@dogecoin, @litecoin and @Bitcoin. "
+            "CRITICAL: Use ONLY 0 to 1 emojis maximum in the entire post. "
+            "CRITICAL: Be extremely creative. Use high variance in sentence structure, vocabulary, and angles. "
+            "Follow the user's requested language, tonality, and topic exactly if provided."
         )
 
     contents = [{"role": "user", "parts": [{"text": system}]}]
@@ -147,7 +149,7 @@ async def generate_chat_response(
             try:
                 if is_social:
                     full = ""
-                    async for chunk in provider.stream(DEFAULT_MODEL, contents):
+                    async for chunk in provider.stream(DEFAULT_MODEL, contents, temperature=0.9):
                         full += chunk
                     yield format_social_post(full)
                     return
@@ -166,7 +168,8 @@ async def generate_chat_response(
         return streamer()
 
     try:
-        text = provider.generate(DEFAULT_MODEL, contents)
+        kwargs = {"temperature": 0.9} if is_social else {}
+        text = provider.generate(DEFAULT_MODEL, contents, **kwargs)
     except LLMError as e:
         raise HTTPException(status_code=e.status_code, detail=str(e))
 

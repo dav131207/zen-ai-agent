@@ -13,12 +13,12 @@ class LLMProvider(ABC):
     """Base class for all LLM providers."""
 
     @abstractmethod
-    def generate(self, model: str, contents: list) -> str:
+    def generate(self, model: str, contents: list, **kwargs) -> str:
         """Generate a complete text response."""
         ...
 
     @abstractmethod
-    def stream(self, model: str, contents: list) -> AsyncGenerator[str, None]:
+    def stream(self, model: str, contents: list, **kwargs) -> AsyncGenerator[str, None]:
         """Yield text chunks as they are generated."""
         ...
 
