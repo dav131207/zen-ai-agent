@@ -327,7 +327,7 @@ export default function Chat({ isDark }) {
           </motion.div>
         )}
 
-        <div ref={bottomRef} />
+        <div ref={bottomRef} className="h-32 md:h-48 shrink-0" />
       </div>
 
       {/* input area */}
