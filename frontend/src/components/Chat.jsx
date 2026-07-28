@@ -271,9 +271,9 @@ export default function Chat({ isDark }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* messages */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin px-3 sm:px-4 md:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <div className="flex-1 overflow-y-auto scrollbar-thin px-3 sm:px-4 md:px-8 py-4 sm:py-6 pb-48 space-y-4 sm:space-y-6">
         <AnimatePresence initial={false}>
           {messages.map((msg, idx) => {
             const precedingUserMessage =
@@ -331,8 +331,8 @@ export default function Chat({ isDark }) {
       </div>
 
       {/* input area */}
-      <div className={`relative z-20 px-3 sm:px-4 md:px-8 py-3 sm:py-4 bg-brand-800/70 dark:bg-brand-950/60 backdrop-blur-xl border-t border-brand-700/30 dark:border-white/5`}>
-        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative">
+      <div className="absolute bottom-0 left-0 right-0 z-20 px-3 sm:px-4 md:px-8 pt-12 pb-6 sm:pb-8 bg-gradient-to-t from-brand-900 via-brand-900/95 to-transparent pointer-events-none">
+        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative pointer-events-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 sm:mb-3">
             {COMMANDS.map((cmd) => (
               <button
@@ -346,11 +346,7 @@ export default function Chat({ isDark }) {
                   }
                 }}
                 disabled={loading}
-                className={`w-full min-h-[44px] px-3 sm:px-3 py-2 rounded-full text-[11px] sm:text-[11px] font-medium text-center leading-tight transition-all duration-200 hover:scale-[1.02] hover:shadow-md ${
-                  isDark
-                    ? 'bg-brand-800 text-brand-300 hover:bg-brand-700 hover:text-brand-50'
-                    : 'bg-brand-100 text-brand-600 hover:bg-brand-200 hover:text-brand-900'
-                } disabled:opacity-50 disabled:hover:scale-100`}
+                className="w-full min-h-[44px] px-3 py-2 rounded-full text-[11px] font-medium text-center leading-tight transition-all duration-300 hover:scale-[1.03] hover:-translate-y-0.5 bg-white/5 border border-white/10 text-brand-300 hover:text-white hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(38,154,76,0.2)] disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0"
               >
                 <span className="md:hidden block">{labels?.[`${cmd.id}Short`] || labels?.[cmd.id] || cmd.id}</span>
                 <span className="hidden md:block">{labels?.[cmd.id] || cmd.id}</span>
@@ -358,19 +354,13 @@ export default function Chat({ isDark }) {
             ))}
           </div>
 
-          <div className={`flex items-center gap-1.5 sm:gap-2 rounded-full border px-2 sm:px-2.5 py-1.5 sm:py-2 shadow-lg transition-all duration-300 focus-within:ring-2 focus-within:ring-accent/40 focus-within:shadow-accent/20 ${
-            isDark
-              ? 'bg-brand-800/80 border-white/10 focus-within:border-accent/50'
-              : 'bg-white border-brand-200 focus-within:border-accent/50'
-          }`}>
+          <div className="flex items-center gap-1.5 sm:gap-2 rounded-full border px-2 sm:px-2.5 py-1.5 sm:py-2 shadow-lg transition-all duration-300 focus-within:ring-2 focus-within:ring-accent/40 focus-within:shadow-accent/20 bg-white/5 backdrop-blur-md border-white/10 focus-within:border-accent/50">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={labels.placeholder}
-              className={`flex-1 bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 outline-none text-sm transition-colors min-w-0 ${
-                isDark ? 'placeholder:text-brand-500 text-brand-50' : 'placeholder:text-brand-400 text-brand-900'
-              }`}
+              className="flex-1 bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 outline-none text-sm transition-colors min-w-0 placeholder:text-brand-500 text-brand-50"
             />
             <button
               type="submit"
