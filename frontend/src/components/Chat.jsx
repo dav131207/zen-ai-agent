@@ -273,7 +273,7 @@ export default function Chat({ isDark }) {
   return (
     <div className="flex flex-col h-full relative">
       {/* messages */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin px-3 sm:px-4 md:px-8 py-4 sm:py-6 pb-48 space-y-4 sm:space-y-6">
+      <div className="flex-1 overflow-y-auto scrollbar-thin px-3 sm:px-4 md:px-8 py-4 sm:py-6 pb-64 space-y-4 sm:space-y-6">
         <AnimatePresence initial={false}>
           {messages.map((msg, idx) => {
             const precedingUserMessage =
