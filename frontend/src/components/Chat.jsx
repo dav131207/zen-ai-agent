@@ -20,13 +20,7 @@ export default function Chat({ isDark }) {
   const [language, setLanguage] = useState('English')
   const labels = getLabels(language)
 
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      text: labels.welcome,
-      time: formatTime(new Date()),
-    },
-  ])
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [typingText, setTypingText] = useState('')
@@ -48,17 +42,45 @@ export default function Chat({ isDark }) {
   }, [])
 
   useEffect(() => {
-    setMessages((prev) => {
-      if (
-        prev.length === 1 &&
-        prev[0].role === 'assistant' &&
-        prev[0].text === DEFAULT_LABELS.welcome
-      ) {
-        return [{ ...prev[0], text: labels.welcome }]
+    const fetchInitialGreeting = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(`${API_BASE}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: '',
+            message: 'Generate a short initial greeting for the chat as Professor Pepe. Be completely random every time: sometimes cheeky, sometimes funny, sometimes ranting. Maximum 2 sentences. Do not mention that you are an AI.',
+            history: [],
+            stream: true,
+          }),
+        })
+        if (!response.ok) return
+        
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let fullText = ''
+        
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          fullText += decoder.decode(value, { stream: true })
+          setTypingText(fullText)
+        }
+        
+        setMessages([{ role: 'assistant', text: fullText, time: formatTime(new Date()) }])
+        setTypingText('')
+      } catch (err) {
+        setMessages([{ role: 'assistant', text: labels.welcome, time: formatTime(new Date()) }])
+      } finally {
+        setLoading(false)
       }
-      return prev
-    })
-  }, [labels])
+    }
+
+    if (messages.length === 0 && !loading) {
+      fetchInitialGreeting()
+    }
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

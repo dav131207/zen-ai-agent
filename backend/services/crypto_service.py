@@ -54,9 +54,9 @@ async def get_pepe_market_data(http_client: httpx.AsyncClient) -> str:
             
             context = (
                 "CURRENT $PEP (Pepecoin) MARKET DATA (from CoinGecko):\n"
-                f"- Price: ${price:,.4f}\n"
-                f"- Market Cap: ${mc:,.0f}\n"
-                f"- 24h Volume: ${vol:,.0f}\n"
+                f"- Price: ${price}\n"
+                f"- Market Cap: ${mc}\n"
+                f"- 24h Volume: ${vol}\n"
                 f"- 24h Change: {change:+.2f}%\n"
                 "Use this real-time data to answer questions about the current price, market cap, or volume."
             )
