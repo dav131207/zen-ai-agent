@@ -12,6 +12,7 @@ const TONALITIES = [
   { id: 'Professional', label: 'Professional', desc: 'Direct, factual, and serious' },
   { id: 'Hype', label: 'Hype', desc: 'High energy, bullish sentiment' },
   { id: 'Educational', label: 'Educational', desc: 'Informative tech breakdown' },
+  { id: 'Shill', label: 'Shill', desc: 'Aggressive marketing, tag influencers (break the bubble)' },
   { id: 'Philosophical', label: 'Philosophical', desc: 'Abstract thoughts on decentralization' }
 ]
 
