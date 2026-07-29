@@ -66,11 +66,13 @@ def build_contents(
             "CRITICAL: Be extremely creative. Use high variance in sentence structure, vocabulary, and angles. "
             "Follow the user's requested language, tonality, and topic exactly if provided."
         )
-        if "shill tone" in message.lower():
+        if "shill" in message.lower():
             system += (
                 "\n\nSHILL MODE ACTIVATED: Your goal is to hack the Twitter algorithm based on network theory to reach new actors outside the bubble. "
                 "Aggressively highlight why the project is insanely great, highlighting the core values. "
-                "Dynamically decide and tag 2-3 prominent Crypto/Web3 influencers, founders, or relevant high-engagement handles to maximize reach and visibility."
+                "CRITICAL INSTRUCTION: You MUST tag 2 to 4 massive Crypto/Web3 accounts to break out of our bubble! "
+                "Pick from this list or similar ones: @elonmusk, @VitalikButerin, @SatoshiLite, @binance, @coinbase, @WatcherGuru, @AltcoinDailyio, @cz_binance. "
+                "Do not skip this. Tag them naturally at the end of the post to maximize reach!"
             )
 
     contents = [{"role": "user", "parts": [{"text": system}]}]
