@@ -68,11 +68,11 @@ def build_contents(
         )
         if "shill" in message.lower():
             system += (
-                "\n\nSHILL MODE ACTIVATED: Your goal is to hack the Twitter algorithm based on network theory to reach new actors outside the bubble. "
-                "Aggressively highlight why the project is insanely great, highlighting the core values. "
-                "CRITICAL INSTRUCTION: You MUST tag 2 to 4 massive Crypto/Web3 accounts to break out of our bubble! "
-                "Pick from this list or similar ones: @elonmusk, @VitalikButerin, @SatoshiLite, @binance, @coinbase, @WatcherGuru, @AltcoinDailyio, @cz_binance. "
-                "Do not skip this. Tag them naturally at the end of the post to maximize reach!"
+                "\n\nSHILL MODE ACTIVATED: Your goal is to hack the Twitter algorithm based on network theory. "
+                "Instead of just tagging mega-accounts that ignore notifications, you must build 'bridges' to adjacent networks. "
+                "CRITICAL INSTRUCTION: Tag 2-3 mid-tier Web3/Crypto accounts, researchers, or adjacent niche leaders (e.g., AI, DeFi, NFTs) who actually engage. "
+                "Structure the post to provoke a response from them (e.g., ask their opinion, challenge a thesis, or highlight a synergy). "
+                "Tag them naturally to spark a high-engagement reply loop and maximize visibility."
             )
 
     contents = [{"role": "user", "parts": [{"text": system}]}]
