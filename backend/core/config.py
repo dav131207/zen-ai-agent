@@ -32,3 +32,4 @@ QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "professor_pepe")
 SYSTEM_PROMPT_PATH = BACKEND_DIR / "persona" / "system_prompt.txt"
 
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+COINGECKO_API_KEY = os.getenv("COINGECKO_API_KEY", "")

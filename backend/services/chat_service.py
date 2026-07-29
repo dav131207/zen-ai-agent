@@ -8,6 +8,8 @@ from core.config import DEFAULT_MODEL, SYSTEM_PROMPT_PATH
 from core.providers import get_llm_provider
 from core.providers.base import LLMError
 from fastapi import HTTPException
+from services.crypto_service import get_pepe_market_data
+from core.http import http
 
 if SYSTEM_PROMPT_PATH.exists():
     _system_prompt = SYSTEM_PROMPT_PATH.read_text(encoding="utf-8")
@@ -141,6 +143,11 @@ async def generate_chat_response(
 ) -> AsyncGenerator[str, None] | str:
     """Generate a chat response, optionally streaming."""
     provider = get_llm()
+    
+    crypto_context = await get_pepe_market_data(http)
+    if crypto_context:
+        context = (context + "\n\n" + crypto_context).strip()
+        
     contents = build_contents(topic, message, history, context, language)
     is_social = is_social_command(message)
 
