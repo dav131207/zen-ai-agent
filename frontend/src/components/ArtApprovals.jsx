@@ -45,6 +45,22 @@ export default function ArtApprovals({ token }) {
     }
   }
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this art?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/community-art/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      if (!res.ok) throw new Error('Delete failed')
+      fetchArt()
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
   const filteredArt = artList.filter(a => a.status === filter)
 
   if (loading && artList.length === 0) {
@@ -107,7 +123,7 @@ export default function ArtApprovals({ token }) {
                     {art.description}
                   </p>
                 </div>
-                <div className="mt-auto pt-3 border-t border-brand-100 dark:border-white/10 flex gap-2">
+                <div className="mt-auto pt-3 border-t border-brand-100 dark:border-white/10 flex flex-wrap gap-2">
                   {filter !== 'approved' && (
                     <button 
                       onClick={() => handleUpdate(art.id, 'approved', art.label)}
@@ -132,6 +148,12 @@ export default function ArtApprovals({ token }) {
                       Unapprove
                     </button>
                   )}
+                  <button 
+                    onClick={() => handleDelete(art.id)}
+                    className="flex-none px-3 py-1.5 bg-black hover:bg-gray-800 text-white rounded font-medium text-xs transition-colors"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             </div>

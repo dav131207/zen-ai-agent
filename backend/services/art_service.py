@@ -134,3 +134,23 @@ def get_random_art(label: str) -> Optional[dict]:
         (label,)
     ).fetchone()
     return dict(row) if row else None
+
+def delete_art(art_id: int) -> bool:
+    conn = _get_conn()
+    row = conn.execute("SELECT * FROM community_art WHERE id = ?", (art_id,)).fetchone()
+    if not row:
+        return False
+    
+    filename = row["filename"]
+    # Try deleting from both directories just in case
+    for d in (UPLOADS_DIR, MEMES_COMMUNITY_DIR):
+        file_path = d / filename
+        if file_path.exists():
+            try:
+                file_path.unlink()
+            except Exception:
+                pass
+
+    conn.execute("DELETE FROM community_art WHERE id = ?", (art_id,))
+    conn.commit()
+    return True

@@ -363,6 +363,16 @@ async def update_community_art(art_id: int, req: ArtUpdateRequest, request: Requ
         raise HTTPException(status_code=404, detail="Art not found")
     return {"art": art}
 
+@router.delete("/admin/community-art/{art_id}")
+async def delete_community_art(art_id: int, request: Request):
+    auth_header = request.headers.get("Authorization")
+    check_admin_auth(auth_header)
+    from services.art_service import delete_art
+    success = delete_art(art_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Art not found")
+    return {"status": "deleted"}
+
 @router.get("/community-art/labels")
 async def get_community_art_labels():
     from services.art_service import get_labels
@@ -375,5 +385,10 @@ async def get_random_community_art(label: str, request: Request):
     if not art:
         raise HTTPException(status_code=404, detail="No art found for this label")
     
-    url = f"{request.base_url}memes/community/{art['filename']}"
+    filename = str(art['filename'])
+    if filename.lower().endswith(('.mp4', '.webm')):
+        url = f"{request.base_url}memes/community/{filename}"
+    else:
+        url = f"{request.base_url}api/watermark?path=/memes/community/{filename}"
+
     return {"art": {"url": url, "description": art["description"], "label": art["label"]}}
