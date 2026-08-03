@@ -69,11 +69,12 @@ def build_contents(
             )
         elif platform == "reddit":
             system += (
-                "Format this as a Reddit post (use markdown). "
-                "Make it long-form, analytical, and community-focused. "
-                "Do not use Twitter @ handles. Instead, refer to Pepecoin, Dogecoin, Litecoin, and Bitcoin naturally. "
-                "Include a catchy title at the top, like '# [Title]'. "
-                "Focus on sparking a deep discussion, providing value, and encouraging comments. "
+                "Format this as a subtle, organic Reddit text post (use markdown). "
+                "Keep it concise, conversational, and non-promotional so it doesn't get flagged by moderators. "
+                "Do not write it like an ad or 'Due Diligence' unless explicitly asked. "
+                "Do not use Twitter @ handles. Refer to Pepecoin, Dogecoin, Litecoin, and Bitcoin naturally. "
+                "NEVER suggest or include images for Reddit posts. "
+                "Focus on asking genuine questions or sharing a quick, casual thought to spark comments."
             )
         elif platform == "tiktok":
             system += (
@@ -97,9 +98,10 @@ def build_contents(
                 )
             elif platform == "reddit":
                 system += (
-                    "\n\nSHILL MODE ACTIVATED: Your goal is to hack the Reddit algorithm. "
-                    "Write a controversial but highly well-researched DD (Due Diligence) or contrarian take. "
-                    "Anticipate counter-arguments and address them. The goal is upvotes through sheer quality and debate."
+                    "\n\nSHILL MODE ACTIVATED: Your goal is to hack the Reddit algorithm subtly. "
+                    "You must NOT sound like a marketer. Pose as a curious community member or skeptic. "
+                    "Write a slightly contrarian take or a 'stupid' question that forces people to correct you in the comments (Cunningham's Law). "
+                    "The goal is organic comment volume, which triggers the algorithm."
                 )
             elif platform == "tiktok":
                 system += (
