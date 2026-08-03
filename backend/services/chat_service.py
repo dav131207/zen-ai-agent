@@ -56,24 +56,57 @@ def build_contents(
         )
 
     if is_social_command(message):
-        system += (
-            "\n\nYou are generating a social media post. "
-            "Keep the final text under 280 characters. "
-            "Do not include images unless the user explicitly asks for one. "
-            "Always include @PepecoinNetwork. "
-            "@dogecoin, @litecoin and @Bitcoin. "
-            "CRITICAL: Use ONLY 0 to 1 emojis maximum in the entire post. "
-            "CRITICAL: Be extremely creative. Use high variance in sentence structure, vocabulary, and angles. "
-            "Follow the user's requested language, tonality, and topic exactly if provided."
-        )
-        if "shill" in message.lower():
+        platform_match = re.search(r"Platform:\s*(\w+)", message, re.IGNORECASE)
+        platform = platform_match.group(1).lower() if platform_match else "twitter"
+
+        system += "\n\nYou are generating a social media post. "
+        if platform == "twitter":
             system += (
-                "\n\nSHILL MODE ACTIVATED: Your goal is to hack the Twitter algorithm based on network theory. "
-                "Instead of just tagging mega-accounts that ignore notifications, you must build 'bridges' to adjacent networks. "
-                "CRITICAL INSTRUCTION: Tag 2-3 mid-tier Web3/Crypto accounts, researchers, or adjacent niche leaders (e.g., AI, DeFi, NFTs) who actually engage. "
-                "Structure the post to provoke a response from them (e.g., ask their opinion, challenge a thesis, or highlight a synergy). "
-                "Tag them naturally to spark a high-engagement reply loop and maximize visibility."
+                "Keep the final text under 280 characters. "
+                "Always include @PepecoinNetwork, @dogecoin, @litecoin and @Bitcoin. "
+                "CRITICAL: Use ONLY 0 to 1 emojis maximum in the entire post. "
+                "CRITICAL: Be extremely creative. Use high variance in sentence structure, vocabulary, and angles. "
             )
+        elif platform == "reddit":
+            system += (
+                "Format this as a Reddit post (use markdown). "
+                "Make it long-form, analytical, and community-focused. "
+                "Do not use Twitter @ handles. Instead, refer to Pepecoin, Dogecoin, Litecoin, and Bitcoin naturally. "
+                "Include a catchy title at the top, like '# [Title]'. "
+                "Focus on sparking a deep discussion, providing value, and encouraging comments. "
+            )
+        elif platform == "tiktok":
+            system += (
+                "Format this as a TikTok script or caption. "
+                "Keep it punchy, visual, and highly engaging for Gen-Z. "
+                "Use a strong hook in the first 3 seconds. "
+                "Include hashtags like #Pepecoin #Crypto #Web3. "
+                "Include visual cues in brackets, e.g., [Point to text]. "
+            )
+            
+        system += "Follow the user's requested language, tonality, and topic exactly if provided."
+
+        if "shill" in message.lower():
+            if platform == "twitter":
+                system += (
+                    "\n\nSHILL MODE ACTIVATED: Your goal is to hack the Twitter algorithm based on network theory. "
+                    "Instead of just tagging mega-accounts that ignore notifications, you must build 'bridges' to adjacent networks. "
+                    "CRITICAL INSTRUCTION: Tag 2-3 mid-tier Web3/Crypto accounts, researchers, or adjacent niche leaders (e.g., AI, DeFi, NFTs) who actually engage. "
+                    "Structure the post to provoke a response from them (e.g., ask their opinion, challenge a thesis, or highlight a synergy). "
+                    "Tag them naturally to spark a high-engagement reply loop and maximize visibility."
+                )
+            elif platform == "reddit":
+                system += (
+                    "\n\nSHILL MODE ACTIVATED: Your goal is to hack the Reddit algorithm. "
+                    "Write a controversial but highly well-researched DD (Due Diligence) or contrarian take. "
+                    "Anticipate counter-arguments and address them. The goal is upvotes through sheer quality and debate."
+                )
+            elif platform == "tiktok":
+                system += (
+                    "\n\nSHILL MODE ACTIVATED: Your goal is to hack the TikTok algorithm. "
+                    "Use a trending audio concept or 'stitch' setup. "
+                    "Keep the pace incredibly fast. Tease a 'secret' at the beginning that is only revealed at the end to maximize watch time."
+                )
 
     contents = [{"role": "user", "parts": [{"text": system}]}]
     for turn in history[-10:]:
@@ -87,9 +120,12 @@ def build_contents(
     return contents
 
 
-def format_social_post(text: str) -> str:
+def format_social_post(text: str, platform: str = "twitter") -> str:
     """Normalize coin names to X/Twitter handles and ensure @PepecoinNetwork."""
     text = (text or "").strip()
+
+    if platform != "twitter":
+        return text
 
     text = re.sub(r"(?<!@)\bDogecoin\b", "@dogecoin", text, flags=re.IGNORECASE)
     text = re.sub(r"(?<!@)\bLitecoin\b", "@litecoin", text, flags=re.IGNORECASE)
@@ -163,10 +199,12 @@ async def generate_chat_response(
         async def streamer():
             try:
                 if is_social:
+                    platform_match = re.search(r"Platform:\s*(\w+)", message, re.IGNORECASE)
+                    platform = platform_match.group(1).lower() if platform_match else "twitter"
                     full = ""
                     async for chunk in provider.stream(DEFAULT_MODEL, contents, temperature=0.9):
                         full += chunk
-                    yield format_social_post(full)
+                    yield format_social_post(full, platform)
                     return
 
                 async for chunk in provider.stream(DEFAULT_MODEL, contents):
@@ -189,5 +227,7 @@ async def generate_chat_response(
         raise HTTPException(status_code=e.status_code, detail=str(e))
 
     if is_social:
-        text = format_social_post(text)
+        platform_match = re.search(r"Platform:\s*(\w+)", message, re.IGNORECASE)
+        platform = platform_match.group(1).lower() if platform_match else "twitter"
+        text = format_social_post(text, platform)
     return text

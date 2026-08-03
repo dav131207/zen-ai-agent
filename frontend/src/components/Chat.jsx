@@ -34,9 +34,9 @@ export default function Chat({ isDark }) {
   const [showSwipeHint, setShowSwipeHint] = useState(true)
   const bottomRef = useRef(null)
 
-  const handleSocialSubmit = ({ language, tonality, topic }) => {
+  const handleSocialSubmit = ({ platform, language, tonality, topic }) => {
     setIsSocialModalOpen(false)
-    const prompt = `create a social media post. Language: ${language}. Tonality: ${tonality}. Topic: ${topic}`
+    const prompt = `create a social media post. Platform: ${platform}. Language: ${language}. Tonality: ${tonality}. Topic: ${topic}`
     handleSubmit(null, { id: 'social', display: labels['social'], send: prompt })
   }
 

@@ -7,6 +7,12 @@ const LANGUAGES = [
   'Mandarin', 'Arabic', 'Japanese', 'Russian', 'Hindi', 'Portuguese'
 ]
 
+const PLATFORMS = [
+  { id: 'Twitter', label: 'Twitter / X', desc: 'Short, punchy, high-engagement' },
+  { id: 'Reddit', label: 'Reddit', desc: 'Long-form, analytical, community-focused' },
+  { id: 'TikTok', label: 'TikTok', desc: 'Viral script, visual hooks, Gen-Z vibe' }
+]
+
 const TONALITIES = [
   { id: 'Humorous', label: 'Humorous', desc: 'Sarcastic & witty meme style' },
   { id: 'Professional', label: 'Professional', desc: 'Direct, factual, and serious' },
@@ -17,8 +23,9 @@ const TONALITIES = [
 ]
 
 export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
-  const [step, setStep] = useState(0) // 0: Lang, 1: Tone, 2: Topic
+  const [step, setStep] = useState(0) // 0: Platform, 1: Lang, 2: Tone, 3: Topic
   
+  const [platform, setPlatform] = useState('')
   const [language, setLanguage] = useState('')
   const [tonality, setTonality] = useState('')
   const [topic, setTopic] = useState('')
@@ -28,6 +35,7 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
   useEffect(() => {
     if (isOpen) {
       setStep(0)
+      setPlatform('')
       setLanguage('')
       setTonality('')
       setTopic('')
@@ -39,6 +47,10 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
   if (!isOpen) return null
 
   // Filter lists based on search input
+  const filteredPlatforms = PLATFORMS.filter(p => 
+    p.label.toLowerCase().includes(search.toLowerCase()) || 
+    p.desc.toLowerCase().includes(search.toLowerCase())
+  )
   const filteredLanguages = LANGUAGES.filter(l => l.toLowerCase().includes(search.toLowerCase()))
   const filteredTonalities = TONALITIES.filter(t => 
     t.label.toLowerCase().includes(search.toLowerCase()) || 
@@ -59,15 +71,19 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
     if (e.key === 'Enter') {
       e.preventDefault()
       if (step === 0 && items.length > 0) {
-        setLanguage(items[0])
+        setPlatform(items[0].id)
         setStep(1)
         setSearch('')
       } else if (step === 1 && items.length > 0) {
-        setTonality(items[0].id)
+        setLanguage(items[0])
         setStep(2)
         setSearch('')
-      } else if (step === 2) {
-        onSubmit({ language, tonality, topic: search })
+      } else if (step === 2 && items.length > 0) {
+        setTonality(items[0].id)
+        setStep(3)
+        setSearch('')
+      } else if (step === 3) {
+        onSubmit({ platform, language, tonality, topic: search })
       }
     }
   }
@@ -103,10 +119,11 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
           }`}
         >
           {/* Header Status Bar */}
-          <div className={`px-4 py-2 text-[11px] uppercase tracking-widest font-bold flex gap-4 border-b ${isDark ? 'border-white/5 bg-white/5' : 'border-brand-100 bg-brand-50'}`}>
-            <span className={`${step >= 0 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><Globe size={12}/> Language {language && <span className="text-white normal-case ml-1 px-1.5 bg-accent/20 rounded">{language}</span>}</span>
-            <span className={`${step >= 1 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><MessageSquare size={12}/> Tonality {tonality && <span className="text-white normal-case ml-1 px-1.5 bg-accent/20 rounded">{tonality}</span>}</span>
-            <span className={`${step >= 2 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><Hash size={12}/> Topic</span>
+          <div className={`px-4 py-2 text-[11px] uppercase tracking-widest font-bold flex flex-wrap gap-x-4 gap-y-2 border-b ${isDark ? 'border-white/5 bg-white/5' : 'border-brand-100 bg-brand-50'}`}>
+            <span className={`${step >= 0 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><Globe size={12}/> Platform {platform && <span className="text-white normal-case ml-1 px-1.5 bg-accent/20 rounded">{platform}</span>}</span>
+            <span className={`${step >= 1 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><Globe size={12}/> Language {language && <span className="text-white normal-case ml-1 px-1.5 bg-accent/20 rounded">{language}</span>}</span>
+            <span className={`${step >= 2 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><MessageSquare size={12}/> Tonality {tonality && <span className="text-white normal-case ml-1 px-1.5 bg-accent/20 rounded">{tonality}</span>}</span>
+            <span className={`${step >= 3 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><Hash size={12}/> Topic</span>
           </div>
 
           {/* Search / Input Bar */}
@@ -117,12 +134,13 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
-                const items = step === 0 ? filteredLanguages : step === 1 ? filteredTonalities : []
+                const items = step === 0 ? filteredPlatforms : step === 1 ? filteredLanguages : step === 2 ? filteredTonalities : []
                 handleKeyDown(e, items)
               }}
               placeholder={
-                step === 0 ? "Search language..." : 
-                step === 1 ? "Search tonality..." : 
+                step === 0 ? "Search platform..." : 
+                step === 1 ? "Search language..." : 
+                step === 2 ? "Search tonality..." : 
                 "What is this post about? (Press Enter to generate)"
               }
               className={`flex-1 bg-transparent text-lg outline-none font-medium placeholder:font-normal ${
@@ -132,12 +150,30 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
           </div>
 
           {/* Results List */}
-          {step < 2 && (
+          {step < 3 && (
             <div className={`max-h-[300px] overflow-y-auto border-t ${isDark ? 'border-white/5' : 'border-brand-100'} p-2`}>
-              {step === 0 && filteredLanguages.map((l, idx) => (
+              {step === 0 && filteredPlatforms.map((p, idx) => (
+                <button
+                  key={p.id}
+                  onClick={() => { setPlatform(p.id); setStep(1); setSearch(''); inputRef.current?.focus() }}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-colors ${
+                    idx === 0 
+                      ? isDark ? 'bg-white/10' : 'bg-brand-50' 
+                      : isDark ? 'hover:bg-white/5' : 'hover:bg-brand-50/50'
+                  }`}
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">{p.label}</span>
+                    <span className={`text-xs ${isDark ? 'text-brand-500' : 'text-brand-500'}`}>{p.desc}</span>
+                  </div>
+                  {idx === 0 && <span className={`text-[10px] flex items-center gap-1 px-2 py-1 rounded ${isDark ? 'bg-white/10 text-brand-300' : 'bg-brand-100 text-brand-600'}`}>Press <CornerDownLeft size={10}/></span>}
+                </button>
+              ))}
+
+              {step === 1 && filteredLanguages.map((l, idx) => (
                 <button
                   key={l}
-                  onClick={() => { setLanguage(l); setStep(1); setSearch(''); inputRef.current?.focus() }}
+                  onClick={() => { setLanguage(l); setStep(2); setSearch(''); inputRef.current?.focus() }}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-colors ${
                     idx === 0 
                       ? isDark ? 'bg-white/10' : 'bg-brand-50' 
@@ -149,10 +185,10 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
                 </button>
               ))}
 
-              {step === 1 && filteredTonalities.map((t, idx) => (
+              {step === 2 && filteredTonalities.map((t, idx) => (
                 <button
                   key={t.id}
-                  onClick={() => { setTonality(t.id); setStep(2); setSearch(''); inputRef.current?.focus() }}
+                  onClick={() => { setTonality(t.id); setStep(3); setSearch(''); inputRef.current?.focus() }}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-colors ${
                     idx === 0 
                       ? isDark ? 'bg-white/10' : 'bg-brand-50' 
@@ -167,7 +203,7 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
                 </button>
               ))}
 
-              {((step === 0 && filteredLanguages.length === 0) || (step === 1 && filteredTonalities.length === 0)) && (
+              {((step === 0 && filteredPlatforms.length === 0) || (step === 1 && filteredLanguages.length === 0) || (step === 2 && filteredTonalities.length === 0)) && (
                 <div className={`px-4 py-8 text-center text-sm ${isDark ? 'text-brand-500' : 'text-brand-400'}`}>
                   No results found.
                 </div>
@@ -175,13 +211,13 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
             </div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <div className={`px-6 py-6 border-t ${isDark ? 'border-white/5 bg-white/5' : 'border-brand-100 bg-brand-50'} flex justify-between items-center`}>
               <div className="text-sm opacity-60 flex items-center gap-2">
                 Type your context and press <kbd className="px-1.5 py-0.5 rounded border border-current font-mono text-[10px]">ENTER</kbd>
               </div>
               <button
-                onClick={() => onSubmit({ language, tonality, topic: search })}
+                onClick={() => onSubmit({ platform, language, tonality, topic: search })}
                 className="flex items-center gap-2 px-6 py-2 rounded-lg bg-accent text-brand-950 font-bold hover:opacity-90 transition-opacity shadow-lg shadow-accent/20"
               >
                 Generate <ArrowRight size={16} />
