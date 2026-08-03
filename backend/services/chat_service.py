@@ -77,11 +77,11 @@ def build_contents(
             )
         elif platform == "tiktok":
             system += (
-                "Format this as a TikTok script or caption. "
-                "Keep it punchy, visual, and highly engaging for Gen-Z. "
-                "Use a strong hook in the first 3 seconds. "
-                "Include hashtags like #Pepecoin #Crypto #Web3. "
-                "Include visual cues in brackets, e.g., [Point to text]. "
+                "Format this as a ready-to-post TikTok caption. "
+                "Do not write a video script or visual cues. Just write the highly engaging text caption that goes under the video. "
+                "Keep it punchy, conversational, and highly engaging for Gen-Z. "
+                "Include a strong text hook at the very beginning. "
+                "Include viral hashtags like #Pepecoin #Crypto #Web3 and ask a question to drive comments."
             )
             
         system += "Follow the user's requested language, tonality, and topic exactly if provided."
@@ -104,8 +104,9 @@ def build_contents(
             elif platform == "tiktok":
                 system += (
                     "\n\nSHILL MODE ACTIVATED: Your goal is to hack the TikTok algorithm. "
-                    "Use a trending audio concept or 'stitch' setup. "
-                    "Keep the pace incredibly fast. Tease a 'secret' at the beginning that is only revealed at the end to maximize watch time."
+                    "Optimize the caption to boost engagement (likes, shares, saves, and comments). "
+                    "Tease a 'secret' or controversial take in the first line so people rewatch the video. "
+                    "Tell viewers to 'save this video' or 'share with a fren' to push it into the algorithm."
                 )
 
     contents = [{"role": "user", "parts": [{"text": system}]}]
