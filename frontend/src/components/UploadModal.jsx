@@ -11,6 +11,7 @@ export default function UploadModal({ isOpen, onClose, isDark }) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [isDragging, setIsDragging] = useState(false)
   const inputRef = useRef(null)
 
   useEffect(() => {
@@ -21,12 +22,11 @@ export default function UploadModal({ isOpen, onClose, isDark }) {
       setLoading(false)
       setSuccess(false)
       setError('')
+      setIsDragging(false)
     }
   }, [isOpen])
 
-  const handleFileChange = (e) => {
-    const selected = e.target.files[0]
-    if (!selected) return
+  const processFile = (selected) => {
     if (selected.size > 20 * 1024 * 1024) {
       setError('File is too large (max 20MB)')
       return
@@ -35,6 +35,30 @@ export default function UploadModal({ isOpen, onClose, isDark }) {
     setError('')
     const objectUrl = URL.createObjectURL(selected)
     setPreview(objectUrl)
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0])
+    }
+  }
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      processFile(e.target.files[0])
+    }
   }
 
   const handleUpload = async () => {
@@ -106,10 +130,15 @@ export default function UploadModal({ isOpen, onClose, isDark }) {
               <>
                 <div 
                   onClick={() => inputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                   className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-                    isDark 
-                      ? 'border-white/20 hover:border-accent hover:bg-white/5' 
-                      : 'border-brand-300 hover:border-accent hover:bg-brand-50'
+                    isDragging 
+                      ? 'border-accent bg-accent/10'
+                      : isDark 
+                        ? 'border-white/20 hover:border-accent hover:bg-white/5' 
+                        : 'border-brand-300 hover:border-accent hover:bg-brand-50'
                   }`}
                 >
                   <input 

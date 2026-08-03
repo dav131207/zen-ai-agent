@@ -388,7 +388,7 @@ export default function Chat({ isDark }) {
       {/* input area */}
       <div className="absolute bottom-0 left-0 right-0 z-20 px-3 sm:px-4 md:px-8 pt-12 pb-6 sm:pb-8 bg-gradient-to-t from-brand-900 via-brand-900/95 to-transparent pointer-events-none">
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative pointer-events-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 sm:mb-3">
+          <div className="grid grid-cols-2 md:flex md:flex-wrap md:justify-center gap-2 mb-2 sm:mb-3">
             {COMMANDS.map((cmd) => (
               <button
                 key={cmd.id}
@@ -403,7 +403,7 @@ export default function Chat({ isDark }) {
                   }
                 }}
                 disabled={loading}
-                className="w-full min-h-[44px] px-3 py-2 rounded-full text-[11px] font-medium text-center leading-tight transition-all duration-300 hover:scale-[1.03] hover:-translate-y-0.5 bg-white/5 border border-white/10 text-brand-300 hover:text-white hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(38,154,76,0.2)] disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0"
+                className="w-full md:flex-1 md:w-auto min-h-[44px] px-3 md:px-4 py-2 rounded-full text-[11px] font-medium text-center leading-tight transition-all duration-300 hover:scale-[1.03] hover:-translate-y-0.5 bg-white/5 border border-white/10 text-brand-300 hover:text-white hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(38,154,76,0.2)] disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0"
               >
                 <span className="md:hidden block">{labels?.[`${cmd.id}Short`] || labels?.[cmd.id] || cmd.id}</span>
                 <span className="hidden md:block">{labels?.[cmd.id] || cmd.id}</span>
