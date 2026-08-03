@@ -96,4 +96,12 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     @apply bg-brand-400 dark:bg-brand-600;
   }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
