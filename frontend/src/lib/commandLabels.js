@@ -4,6 +4,7 @@ export const DEFAULT_LABELS = {
   rarepepe: 'Rare Pepe',
   social: 'Create Social Media Post',
   socialShort: 'Social Post',
+  communityart: 'Community Art',
   welcome: "Hello. I'm Professor Pepe, your AI agent. Type a command or choose one below.",
   placeholder: 'Type a command...',
 }
@@ -15,6 +16,7 @@ export const LABELS = {
     rarepepe: 'Rare Pepe',
     social: 'Social Media Post erstellen',
     socialShort: 'Post erstellen',
+    communityart: 'Community Art',
     welcome: 'Hallo. Ich bin Professor Pepe, dein KI-Assistent. Tippe einen Befehl oder wähle unten einen aus.',
     placeholder: 'Befehl eingeben...',
   },

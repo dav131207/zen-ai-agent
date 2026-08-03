@@ -31,6 +31,7 @@ export default function Chat({ isDark }) {
   const [isSocialModalOpen, setIsSocialModalOpen] = useState(false)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isArtModalOpen, setIsArtModalOpen] = useState(false)
+  const [showSwipeHint, setShowSwipeHint] = useState(true)
   const bottomRef = useRef(null)
 
   const handleSocialSubmit = ({ language, tonality, topic }) => {
@@ -389,8 +390,30 @@ export default function Chat({ isDark }) {
       <div className="absolute bottom-0 left-0 right-0 z-20 px-3 sm:px-4 md:px-8 pt-12 pb-6 sm:pb-8 bg-gradient-to-t from-brand-900 via-brand-900/95 to-transparent pointer-events-none">
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative pointer-events-auto">
           {/* horizontally scrollable flex row on mobile, flex-wrap on desktop */}
-          <div className="flex overflow-x-auto snap-x hide-scrollbar md:flex-wrap md:justify-center gap-2 mb-2 sm:mb-3 pb-2 md:pb-0">
-            {COMMANDS.map((cmd) => (
+          <div className="relative">
+            <AnimatePresence>
+              {showSwipeHint && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute right-0 top-0 bottom-3 z-10 md:hidden pointer-events-none flex items-center pr-1 bg-gradient-to-l from-brand-900/90 to-transparent w-16 justify-end rounded-r-full"
+                >
+                  <motion.div
+                    animate={{ x: [0, -10, 0] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                    className="text-white drop-shadow-lg"
+                  >
+                    <span className="text-xl">👈</span>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <div 
+              onScroll={() => setShowSwipeHint(false)}
+              className="flex overflow-x-auto snap-x hide-scrollbar md:flex-wrap md:justify-center gap-2 mb-2 sm:mb-3 pb-2 md:pb-0"
+            >
+              {COMMANDS.map((cmd) => (
               <button
                 key={cmd.id}
                 type="button"
@@ -410,6 +433,7 @@ export default function Chat({ isDark }) {
                 <span className="hidden md:block">{labels?.[cmd.id] || cmd.id}</span>
               </button>
             ))}
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 rounded-full border px-2 sm:px-2.5 py-1.5 sm:py-2 shadow-lg transition-all duration-300 focus-within:ring-2 focus-within:ring-accent/40 focus-within:shadow-accent/20 bg-white/5 backdrop-blur-md border-white/10 focus-within:border-accent/50">
