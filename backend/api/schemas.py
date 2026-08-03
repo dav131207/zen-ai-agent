@@ -53,3 +53,8 @@ class EventRequest(BaseModel):
     conversion_type: Optional[str] = Field(default=None, description="e.g. support, discord, faucet, wallet")
     latency_ms: Optional[int] = Field(default=None, description="Request latency in milliseconds")
     metadata: Optional[dict] = Field(default=None, description="Additional event metadata")
+
+
+class ArtUpdateRequest(BaseModel):
+    status: str = Field(..., description="Status (pending, approved, rejected)")
+    label: str = Field(..., description="Label for the art")

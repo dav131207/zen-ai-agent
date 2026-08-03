@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import ArtApprovals from './ArtApprovals'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 const TOKEN_KEY = 'admin_token'
@@ -313,6 +314,7 @@ export default function AdminDashboard() {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [days, setDays] = useState(7)
+  const [activeTab, setActiveTab] = useState('analytics')
 
   const handleLogin = (newToken) => setToken(newToken)
   const handleLogout = () => {
@@ -380,19 +382,37 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-brand-50 dark:bg-brand-900 text-brand-900 dark:text-brand-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <h1 className="text-2xl font-black">Professor Pepe Analytics</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-black">Professor Pepe Admin</h1>
+            <div className="flex bg-brand-100 dark:bg-white/5 rounded-lg p-1">
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${activeTab === 'analytics' ? 'bg-white dark:bg-brand-700 shadow-sm' : 'text-brand-500 hover:text-brand-900 dark:hover:text-brand-100'}`}
+              >
+                Analytics
+              </button>
+              <button
+                onClick={() => setActiveTab('art')}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${activeTab === 'art' ? 'bg-white dark:bg-brand-700 shadow-sm' : 'text-brand-500 hover:text-brand-900 dark:hover:text-brand-100'}`}
+              >
+                Community Art
+              </button>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
-            <select
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
-              className="bg-white dark:bg-brand-800 border border-brand-200 dark:border-white/10 rounded-lg px-3 py-1 text-sm"
-            >
-              <option value={1}>24 hours</option>
-              <option value={7}>7 days</option>
-              <option value={30}>30 days</option>
-              <option value={90}>90 days</option>
-            </select>
+            {activeTab === 'analytics' && (
+              <select
+                value={days}
+                onChange={(e) => setDays(Number(e.target.value))}
+                className="bg-white dark:bg-brand-800 border border-brand-200 dark:border-white/10 rounded-lg px-3 py-1 text-sm"
+              >
+                <option value={1}>24 hours</option>
+                <option value={7}>7 days</option>
+                <option value={30}>30 days</option>
+                <option value={90}>90 days</option>
+              </select>
+            )}
             <button
               onClick={handleLogout}
               className="text-sm px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
@@ -405,8 +425,12 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* KPI row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+        {activeTab === 'art' ? (
+          <ArtApprovals token={token} />
+        ) : (
+          <>
+            {/* KPI row */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
           <StatTile label="Total Events" value={data.total_events} />
           <StatTile label="Unique Sessions" value={data.unique_sessions} />
           <StatTile
@@ -531,6 +555,8 @@ export default function AdminDashboard() {
             <RecentErrorsList items={data.recent_errors} />
           </Card>
         </div>
+          </>
+        )}
       </div>
     </div>
   )

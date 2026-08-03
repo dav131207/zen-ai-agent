@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Loader2 } from 'lucide-react'
+import { Send, Loader2, Paperclip } from 'lucide-react'
 import Message from './Message'
 import ImageModal from './ImageModal'
 import SocialPostModal from './SocialPostModal'
+import UploadModal from './UploadModal'
+import CommunityArtModal from './CommunityArtModal'
 import { DEFAULT_LABELS, getLabels } from '../lib/commandLabels'
 import { measureLatency, trackEvent } from '../lib/analytics'
 
@@ -14,6 +16,7 @@ const COMMANDS = [
   { id: 'meme', prompt: 'random meme' },
   { id: 'rarepepe', prompt: 'rare pepe' },
   { id: 'social', prompt: 'create social media post' },
+  { id: 'communityart', prompt: 'community pepe art' },
 ]
 
 export default function Chat({ isDark }) {
@@ -26,12 +29,42 @@ export default function Chat({ isDark }) {
   const [typingText, setTypingText] = useState('')
   const [modalImage, setModalImage] = useState(null)
   const [isSocialModalOpen, setIsSocialModalOpen] = useState(false)
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [isArtModalOpen, setIsArtModalOpen] = useState(false)
   const bottomRef = useRef(null)
 
   const handleSocialSubmit = ({ language, tonality, topic }) => {
     setIsSocialModalOpen(false)
     const prompt = `create a social media post. Language: ${language}. Tonality: ${tonality}. Topic: ${topic}`
     handleSubmit(null, { id: 'social', display: labels['social'], send: prompt })
+  }
+
+  const handleArtSubmit = async (label) => {
+    setIsArtModalOpen(false)
+    setLoading(true)
+    const userMsg = { role: 'user', text: `Show me some Community Pepe Art for: ${label}`, time: formatTime(new Date()) }
+    setMessages((prev) => [...prev, userMsg])
+    try {
+      const res = await fetch(`${API_BASE}/api/community-art/random?label=${encodeURIComponent(label)}`)
+      if (!res.ok) throw new Error('Failed to fetch art')
+      const data = await res.json()
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: data.art.description || `Here is some community art for ${label}!`,
+          image: data.art.url,
+          time: formatTime(new Date()),
+        },
+      ])
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', text: `⚠️ ${err.message}`, time: formatTime(new Date()) },
+      ])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -363,6 +396,8 @@ export default function Chat({ isDark }) {
                 onClick={() => {
                   if (cmd.id === 'social') {
                     setIsSocialModalOpen(true)
+                  } else if (cmd.id === 'communityart') {
+                    setIsArtModalOpen(true)
                   } else {
                     handleSubmit(null, { id: cmd.id, display: labels[cmd.id], send: cmd.prompt })
                   }
@@ -377,12 +412,21 @@ export default function Chat({ isDark }) {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 rounded-full border px-2 sm:px-2.5 py-1.5 sm:py-2 shadow-lg transition-all duration-300 focus-within:ring-2 focus-within:ring-accent/40 focus-within:shadow-accent/20 bg-white/5 backdrop-blur-md border-white/10 focus-within:border-accent/50">
+            <button
+              type="button"
+              onClick={() => setIsUploadModalOpen(true)}
+              disabled={loading}
+              className="p-2 sm:p-2.5 rounded-full text-brand-300 hover:text-accent hover:bg-accent/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Upload Art"
+            >
+              <Paperclip size={18} />
+            </button>
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={labels.placeholder}
-              className="flex-1 bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 outline-none text-sm transition-colors min-w-0 placeholder:text-brand-500 text-brand-50"
+              className="flex-1 bg-transparent px-2 sm:px-3 py-1.5 sm:py-2 outline-none text-sm transition-colors min-w-0 placeholder:text-brand-500 text-brand-50"
             />
             <button
               type="submit"
@@ -401,6 +445,17 @@ export default function Chat({ isDark }) {
         isOpen={isSocialModalOpen}
         onClose={() => setIsSocialModalOpen(false)}
         onSubmit={handleSocialSubmit}
+        isDark={isDark}
+      />
+      <UploadModal 
+        isOpen={isUploadModalOpen} 
+        onClose={() => setIsUploadModalOpen(false)} 
+        isDark={isDark} 
+      />
+      <CommunityArtModal
+        isOpen={isArtModalOpen}
+        onClose={() => setIsArtModalOpen(false)}
+        onSubmit={handleArtSubmit}
         isDark={isDark}
       />
     </div>

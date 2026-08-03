@@ -321,3 +321,59 @@ async def ingest_file_endpoint(file: UploadFile = File(...)):
     if count == 0:
         raise HTTPException(status_code=503, detail="Qdrant not configured")
     return {"ingested_chunks": count, "filename": file.filename}
+
+from fastapi import Form
+import shutil
+import uuid
+from api.schemas import ArtUpdateRequest
+
+@router.post("/community-art/upload")
+async def upload_community_art(label: str = Form(...), file: UploadFile = File(...)):
+    """Upload community art, get description via Gemini, and store pending."""
+    from services.art_service import add_art, UPLOADS_DIR
+    
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in {".png", ".jpg", ".jpeg", ".gif", ".mp4", ".webm"}:
+        raise HTTPException(status_code=400, detail="Unsupported file format")
+    
+    new_filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = UPLOADS_DIR / new_filename
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    art = add_art(new_filename, label, file_path, file.content_type or "image/png")
+    return {"status": "success", "art": art}
+
+@router.get("/admin/community-art")
+async def get_all_community_art(request: Request):
+    auth_header = request.headers.get("Authorization")
+    check_admin_auth(auth_header)
+    from services.art_service import get_all_art
+    return {"art": get_all_art()}
+
+
+@router.put("/admin/community-art/{art_id}")
+async def update_community_art(art_id: int, req: ArtUpdateRequest, request: Request):
+    auth_header = request.headers.get("Authorization")
+    check_admin_auth(auth_header)
+    from services.art_service import update_art
+    art = update_art(art_id, req.status, req.label)
+    if not art:
+        raise HTTPException(status_code=404, detail="Art not found")
+    return {"art": art}
+
+@router.get("/community-art/labels")
+async def get_community_art_labels():
+    from services.art_service import get_labels
+    return {"labels": get_labels()}
+
+@router.get("/community-art/random")
+async def get_random_community_art(label: str, request: Request):
+    from services.art_service import get_random_art
+    art = get_random_art(label)
+    if not art:
+        raise HTTPException(status_code=404, detail="No art found for this label")
+    
+    url = f"{request.base_url}memes/community/{art['filename']}"
+    return {"art": {"url": url, "description": art["description"], "label": art["label"]}}
