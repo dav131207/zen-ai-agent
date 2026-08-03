@@ -98,19 +98,21 @@ def update_art(art_id: int, status: str, label: str) -> Optional[dict]:
     if not row:
         return None
     
+    import shutil
+    
     filename = row["filename"]
     # If moving to approved, move file from uploads to memes/community
     if status == "approved" and row["status"] != "approved":
         src = UPLOADS_DIR / filename
         dest = MEMES_COMMUNITY_DIR / filename
         if src.exists():
-            src.rename(dest)
+            shutil.move(str(src), str(dest))
     elif status != "approved" and row["status"] == "approved":
         # If moving back to pending/rejected, move back
         src = MEMES_COMMUNITY_DIR / filename
         dest = UPLOADS_DIR / filename
         if src.exists():
-            src.rename(dest)
+            shutil.move(str(src), str(dest))
 
     conn.execute(
         "UPDATE community_art SET status = ?, label = ? WHERE id = ?",

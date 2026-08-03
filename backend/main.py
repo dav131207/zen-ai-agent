@@ -88,6 +88,10 @@ from fastapi.responses import FileResponse
 if MEMES_DIR and MEMES_DIR.is_dir():
     app.mount("/memes", StaticFiles(directory=str(MEMES_DIR)), name="memes")
 
+uploads_dir = Path(__file__).resolve().parent / "data" / "uploads"
+if uploads_dir.is_dir():
+    app.mount("/data/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+
 frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 index_html = frontend_dist / "index.html"
 
