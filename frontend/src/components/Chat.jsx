@@ -411,7 +411,7 @@ export default function Chat({ isDark }) {
             </AnimatePresence>
             <div 
               onScroll={() => setShowSwipeHint(false)}
-              className="flex overflow-x-auto md:overflow-visible snap-x hide-scrollbar md:flex-wrap md:justify-center gap-2 mb-2 sm:mb-3 pb-2 md:pb-0"
+              className="flex overflow-x-auto md:overflow-visible snap-x hide-scrollbar md:flex-wrap md:justify-center gap-2 mb-2 sm:mb-3 py-2 px-2 -mx-2"
             >
               {COMMANDS.map((cmd) => (
               <button
