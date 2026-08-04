@@ -5,6 +5,7 @@ import AdminDashboard from './components/AdminDashboard'
 import Chat from './components/Chat'
 import MobileBanner from './components/MobileBanner'
 import ParticlesBackground from './components/ParticlesBackground'
+import WalletConnect from './components/WalletConnect'
 import { trackEvent } from './lib/analytics'
 
 const SUPPORT_ADDRESS = 'PhzpSqdSiMRNQ6ksCEDs4ufJtFfuyLCU9j'
@@ -122,7 +123,7 @@ export default function App() {
         <ParticlesBackground isDark={isDark} />
         <div className="flex-1 flex overflow-hidden">
         <main className="flex-1 flex flex-col relative">
-          <header className="relative z-10 flex items-center justify-center md:grid md:grid-cols-[1fr_auto_1fr] gap-2 px-3 sm:px-4 md:px-6 py-2 bg-brand-800/70 dark:bg-brand-950/60 backdrop-blur-xl border-b border-brand-700/30 dark:border-white/5">
+          <header className="relative z-10 flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr] gap-2 px-3 sm:px-4 md:px-6 py-2 bg-brand-800/70 dark:bg-brand-950/60 backdrop-blur-xl border-b border-brand-700/30 dark:border-white/5">
             <div className="hidden md:block" />
 
             <div
@@ -153,7 +154,9 @@ export default function App() {
               </div>
             </div>
 
-            <div className="hidden md:block" />
+            <div className="flex items-center justify-end">
+              <WalletConnect />
+            </div>
           </header>
 
           <SupportModal isOpen={showSupport} onClose={() => setShowSupport(false)} />

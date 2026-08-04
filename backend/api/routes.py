@@ -97,6 +97,7 @@ async def record_event(req: EventRequest, request: Request):
         latency_ms=req.latency_ms,
         metadata=req.metadata,
         user_message=req.user_message,
+        wallet_address=req.wallet_address,
     )
     return {"status": "ok"}
 

@@ -18,6 +18,8 @@ function getOrCreateSessionId() {
 
 export async function trackEvent(eventType, data = {}) {
   try {
+    const walletAddress = localStorage.getItem('peppool_address')
+
     await fetch(`${API_BASE}/api/event`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -25,6 +27,7 @@ export async function trackEvent(eventType, data = {}) {
         event_type: eventType,
         session_id: getOrCreateSessionId(),
         user_agent: navigator.userAgent,
+        wallet_address: walletAddress || null,
         ...data,
       }),
     })

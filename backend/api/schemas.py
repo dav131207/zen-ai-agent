@@ -53,6 +53,7 @@ class EventRequest(BaseModel):
     conversion_type: Optional[str] = Field(default=None, description="e.g. support, discord, faucet, wallet")
     latency_ms: Optional[int] = Field(default=None, description="Request latency in milliseconds")
     metadata: Optional[dict] = Field(default=None, description="Additional event metadata")
+    wallet_address: Optional[str] = Field(default=None, description="Connected Peppool wallet address")
 
 
 class ArtUpdateRequest(BaseModel):

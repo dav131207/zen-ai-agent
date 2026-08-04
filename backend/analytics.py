@@ -73,10 +73,19 @@ def init_db() -> None:
         CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id)
         """
     )
+    
     try:
         conn.execute("ALTER TABLE events ADD COLUMN user_message TEXT")
     except sqlite3.OperationalError:
         pass  # column already exists
+        
+    try:
+        conn.execute("ALTER TABLE events ADD COLUMN wallet_address TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    # Re-enable foreign keys after migrations
+    conn.execute("PRAGMA foreign_keys = ON")
     conn.commit()
 
 
@@ -131,6 +140,7 @@ def track_event(
     latency_ms: Optional[int] = None,
     metadata: Optional[dict[str, Any]] = None,
     user_message: Optional[str] = None,
+    wallet_address: Optional[str] = None,
 ) -> None:
     """Persist a single analytics event."""
     conn = _get_conn()
@@ -169,8 +179,8 @@ def track_event(
         INSERT INTO events
         (timestamp, session_hash, session_id, event_type, command, message, language, country,
          user_agent, device_type, os, browser, feedback, conversion_type, latency_ms,
-         topic_keywords, metadata, created_at, user_message)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         topic_keywords, metadata, created_at, user_message, wallet_address)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             now.isoformat(),
@@ -190,8 +200,9 @@ def track_event(
             latency_ms,
             topic_keywords,
             json.dumps(metadata) if metadata else None,
-            int(time.time()),
+            int(now.timestamp()),
             user_message,
+            wallet_address,
         ),
     )
     conn.commit()
