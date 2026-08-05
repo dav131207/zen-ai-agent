@@ -60,7 +60,11 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
   const handleKeyDown = (e, items) => {
     if (e.key === 'Escape') {
       if (step > 0) {
-        setStep(s => s - 1)
+        if (platform === 'Reddit' && step === 3) {
+          setStep(1)
+        } else {
+          setStep(s => s - 1)
+        }
         setSearch('')
       } else {
         onClose()
@@ -76,7 +80,12 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
         setSearch('')
       } else if (step === 1 && items.length > 0) {
         setLanguage(items[0])
-        setStep(2)
+        if (platform === 'Reddit') {
+          setTonality('')
+          setStep(3)
+        } else {
+          setStep(2)
+        }
         setSearch('')
       } else if (step === 2 && items.length > 0) {
         setTonality(items[0].id)
@@ -122,7 +131,9 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
           <div className={`px-4 py-2 text-[11px] uppercase tracking-widest font-bold flex flex-wrap gap-x-4 gap-y-2 border-b ${isDark ? 'border-white/5 bg-white/5' : 'border-brand-100 bg-brand-50'}`}>
             <span className={`${step >= 0 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><Globe size={12}/> Platform {platform && <span className="text-white normal-case ml-1 px-1.5 bg-accent/20 rounded">{platform}</span>}</span>
             <span className={`${step >= 1 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><Globe size={12}/> Language {language && <span className="text-white normal-case ml-1 px-1.5 bg-accent/20 rounded">{language}</span>}</span>
-            <span className={`${step >= 2 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><MessageSquare size={12}/> Tonality {tonality && <span className="text-white normal-case ml-1 px-1.5 bg-accent/20 rounded">{tonality}</span>}</span>
+            {platform !== 'Reddit' && (
+              <span className={`${step >= 2 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><MessageSquare size={12}/> Tonality {tonality && <span className="text-white normal-case ml-1 px-1.5 bg-accent/20 rounded">{tonality}</span>}</span>
+            )}
             <span className={`${step >= 3 ? 'text-accent' : 'opacity-40'} transition-colors flex items-center gap-1.5`}><Hash size={12}/> Topic</span>
           </div>
 
@@ -140,7 +151,7 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
               placeholder={
                 step === 0 ? "Search platform..." : 
                 step === 1 ? "Search language..." : 
-                step === 2 ? "Search tonality..." : 
+                step === 2 && platform !== 'Reddit' ? "Search tonality..." : 
                 "What is this post about? (Press Enter to generate)"
               }
               className={`flex-1 bg-transparent text-lg outline-none font-medium placeholder:font-normal ${
@@ -173,7 +184,17 @@ export default function SocialPostModal({ isOpen, onClose, onSubmit, isDark }) {
               {step === 1 && filteredLanguages.map((l, idx) => (
                 <button
                   key={l}
-                  onClick={() => { setLanguage(l); setStep(2); setSearch(''); inputRef.current?.focus() }}
+                  onClick={() => { 
+                    setLanguage(l); 
+                    if (platform === 'Reddit') {
+                      setTonality('');
+                      setStep(3);
+                    } else {
+                      setStep(2);
+                    }
+                    setSearch(''); 
+                    inputRef.current?.focus();
+                  }}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-colors ${
                     idx === 0 
                       ? isDark ? 'bg-white/10' : 'bg-brand-50' 
