@@ -70,11 +70,15 @@ def build_contents(
         elif platform == "reddit":
             system += (
                 "Format this as a subtle, organic Reddit text post (use markdown). "
-                "Keep it concise, conversational, and non-promotional so it doesn't get flagged by moderators. "
+                "Keep it concise, conversational, and non-promotional. "
                 "Do not write it like an ad or 'Due Diligence' unless explicitly asked. "
-                "Do not use Twitter @ handles. Refer to Pepecoin, Dogecoin, Litecoin, and Bitcoin naturally. "
+                "Do NOT use Twitter @ handles. Refer to Pepecoin natively. "
+                "CRITICAL: Do NOT mention other cryptocurrencies like Dogecoin, Litecoin, or Bitcoin unless absolutely necessary to avoid automated spam filters. "
+                "CRITICAL: Avoid words like 'buy', 'invest', 'moon', 'gem', or 'pump'. "
                 "NEVER suggest or include images for Reddit posts. "
-                "Focus on asking genuine questions or sharing a quick, casual thought to spark comments."
+                "Focus on asking genuine questions or sharing a quick, casual thought to spark comments. "
+                "CRITICAL: To prevent the user from copy-pasting the suggestions into the post, you MUST wrap the actual post text in a markdown blockquote (using >). "
+                "Then, UNDERNEATH the blockquote, suggest 2-3 highly relevant Subreddits where this post would perform best, formatted as: 'Suggested Subreddits: r/Subreddit1, r/Subreddit2'."
             )
         elif platform == "tiktok":
             system += (

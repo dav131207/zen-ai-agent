@@ -4,6 +4,7 @@ import { Wallet } from 'lucide-react'
 export default function WalletConnect() {
   const [address, setAddress] = useState(null)
   const [connecting, setConnecting] = useState(false)
+  const [provider, setProvider] = useState(null)
 
   useEffect(() => {
     // Check if we already have a saved address in localStorage
@@ -11,18 +12,38 @@ export default function WalletConnect() {
     if (saved) {
       setAddress(saved)
     }
-  }, [])
 
-  const getProvider = () => {
-    const providers = window.pep_providers || []
-    return providers.find((p) => p.id === 'peppool')
-  }
+    // Provider discovery
+    const handleAnnounce = (e) => {
+      if (e.detail?.provider?.id === 'peppool') {
+        setProvider(e.detail.provider)
+      }
+    }
+    
+    window.addEventListener('pep_providers:announce', handleAnnounce)
+    window.dispatchEvent(new Event('pep_providers:request'))
+
+    // Fallback: check window.pep_providers array directly
+    const checkArray = () => {
+      const p = (window.pep_providers || []).find((x) => x.id === 'peppool')
+      if (p) setProvider(p)
+    }
+    
+    checkArray()
+    const t1 = setTimeout(checkArray, 500)
+    const t2 = setTimeout(checkArray, 2000)
+
+    return () => {
+      window.removeEventListener('pep_providers:announce', handleAnnounce)
+      clearTimeout(t1)
+      clearTimeout(t2)
+    }
+  }, [])
 
   const handleConnect = async () => {
     if (address) {
       // Disconnect
       try {
-        const provider = getProvider()
         if (provider) await provider.request('wallet_disconnect')
       } catch (e) {
         console.warn('Disconnect error:', e)
@@ -32,7 +53,6 @@ export default function WalletConnect() {
       return
     }
 
-    const provider = getProvider()
     if (!provider) {
       window.open('https://chromewebstore.google.com/detail/peppool-wallet/jfdajbjjeejnlelljgobbfmkkbcbggbp', '_blank')
       return
